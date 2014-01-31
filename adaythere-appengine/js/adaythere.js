@@ -1,5 +1,4 @@
-
-function set_element_positions (width, height) {
+function ADT_set_element_positions (width, height) {
 
 	map_width = Math.floor(width * 0.7);
 	sidebar_width = Math.floor(width * 0.3); 
@@ -7,13 +6,14 @@ function set_element_positions (width, height) {
 	$("#sidebar_section").width (sidebar_width); 
 }
 
-function set_section_height (height) {
+function ADT_set_section_height (height) {
 	h1 = $("#page_header").height();
 	h2 = $("#page_footer").height();
 	val = height - (h1 + h2);
 	$("#map_section").height(val);
 	$("#sidebar_section").height(val);
 }
+
 
 /*
  * ADT_GeoLocate location information
@@ -153,7 +153,8 @@ ADT_GoogleReverseLookup.prototype.location = function () {
 /*
  * adaythere angular module
  */
-var adaythere = angular.module("adaythere", []);
+var adaythere = angular.module("adaythere", ['ui.bootstrap']);
+adaythere.data_store = {};
 
 /*
  * Create location service
@@ -223,10 +224,133 @@ adaythere.factory ("locationInitializer", function () {
 });
 
 /*
+ * Create Profile service
+ */
+function ADT_ProfileService ($http, $q) {
+	this.$http = $http;
+	this.$q = $q;
+}
+
+ADT_ProfileService.prototype.getUserProfile = function () {
+	var deferred = this.$q.defer ();
+
+	if (this.profile_data) {
+		deferred.resolve (this.profile_data)
+	} else { 
+
+		this.$http({
+			method: "GET",
+			url: "/profile"
+		}).success (function (data, status, headers, config) {
+			this.profile_data = data;
+			deferred.resolve (data);
+		}).error (function (data, status, headers, config) {
+			deferred.reject (data, status);
+		});
+	}
+
+	return deferred.promise;
+}
+
+ADT_ProfileService.prototype.setUserLocation = function (location) {
+	this.$http({
+		method: "POST",
+		url: "/profile",
+		data: { location: location }
+	}).success (function (data, status, headers, config) {
+		this.profile_data = data;
+	}).error (function (data, status, headers, config) {
+		console.log (status, data);
+	});
+
+	console.log (location);
+}
+
+adaythere.factory ("profileService", ["$http", "$q", function ($http, $q) {
+	return new ADT_ProfileService ($http, $q);
+}]);
+
+/*
  * adaythere controllers
  */
 
-adaythere.controller ("sidebarCtrl", ["$scope", "locationInitializer", function ($scope, locationInitializer) {
+adaythere.controller ("loginCtrl", ["$scope", "$http", function ($scope, $http) {
+
+	$scope.googlelogin = function () {
+		$http.get ("/login?method=google")
+			.success (function(data, status, headers, config) {
+				window.location.href = data.url;
+			}
+		);
+	};
+	
+	$scope.googlelogout = function () {
+		$http.get ("/logout?method=google")
+			.success (function(data, status, headers, config) {
+				window.location.href = data.url;
+			}
+		);
+	};
+}]);
+
+
+
+adaythere.controller ("profileCtrl", ["$scope", "$modal", "profileService", function ($scope, $modal, profileService) {
+
+	$scope.profile_body_content = { "error":"no profile" };
+
+	profileService.getUserProfile ().then (function (data) {
+		$scope.profile_body_content = data;
+	}, function (data, status) {
+		console.log (status);
+		console.log (data);
+	});
+
+	console.log ($scope);
+
+	$scope.profile = function () {
+
+		var modalInstance = $modal.open({
+			templateUrl: 'profileModalContent.html',
+		    	controller: adaythere.ProfileModalInstanceCtrl,
+		    	resolve: {
+			    	profile_body_content: function () {
+				    	return $scope.profile_body_content;
+			    	}
+		    	},
+		    	scope: $scope 
+		});
+
+		modalInstance.result.then(function (selectedItem) {
+			console.log (selectedItem)
+			$scope.selected = selectedItem;
+		}, function () {
+			console.log ('Modal dismissed at: ' + new Date());
+		});
+	};
+
+}]);
+
+adaythere.ProfileModalInstanceCtrl = function ($scope, $modalInstance, profile_body_content) {
+
+	$scope.profile_body_content = profile_body_content;
+
+	$scope.selected = {
+		profile_body_content: $scope.profile_body_content
+	};
+	
+	$scope.ok = function () {
+		$modalInstance.close($scope.selected.profile_body_content);
+	};
+
+	$scope.cancel = function () {
+		$modalInstance.dismiss('cancel');
+	};
+};
+
+
+
+adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "locationInitializer", "profileService", function ($scope, $modal, locationInitializer, profileService) {
 	$scope.location = locationInitializer.getLocation ();
 	$scope.clicked = {
 		latitude: "",
@@ -274,7 +398,7 @@ adaythere.controller ("sidebarCtrl", ["$scope", "locationInitializer", function 
 		google.maps.event.addListener (locationInitializer.map.get (), "click", function(event) {
 			timerId = window.setTimeout (function () {
 			
-				ADT_google_reverse_lookup (event.latLng.lat (), event.latLng.lng (), function (response) {
+			ADT_google_reverse_lookup (event.latLng.lat (), event.latLng.lng (), function (response) {
 					var rlu = new ADT_GoogleReverseLookup (response);
 					var clicked = rlu.location ().result;
 
@@ -322,7 +446,8 @@ adaythere.controller ("sidebarCtrl", ["$scope", "locationInitializer", function 
 		});
 	});
 
-	$scope.go = function () {
+
+	$scope.centre_map_at = function () {
 		var address = $("#pac_input").val ();
 		locationInitializer.geocoder.geocode( { "address": address}, function(results, status) {
 			if (status == google.maps.GeocoderStatus.OK) {
@@ -334,6 +459,13 @@ adaythere.controller ("sidebarCtrl", ["$scope", "locationInitializer", function 
 		});
 
 	};
+
+	$scope.make_default_location = function () {
+		console.log ($scope.location);
+		profileService.setUserLocation ($scope.location);
+	}
+
+	$scope.places_array = [];
 
 	$scope.search_places = function () {
 		if (!lastClicked) {
@@ -357,17 +489,85 @@ adaythere.controller ("sidebarCtrl", ["$scope", "locationInitializer", function 
 			types: sel_types
 		};
 
+		$scope.places_array = [];
 		service.nearbySearch(request, function (results, status) {
 			if (status == google.maps.places.PlacesServiceStatus.OK) {
-				for (var i = 0; i < results.length; i++) {
-					var place = results[i];
-					console.log (JSON.stringify (place));
-				}
+				$scope.$apply(function () {
+					for (var i = 0; i < results.length; i++) {
+						var place = results[i];
+						$scope.places_array.push (place);
+					}
+				
+			        });		
+				
 			}
 		});
 
 	};
+
+	$scope.markers = [];
+
+
+	$scope.open_marker_modal = function (obj) {
+		$scope.marker_body_content = obj;
+		$scope.marker_title = obj.name;
+		$scope.types = obj.types;
+		$scope.vicinity = obj.vicinity;
+
+		var modalInstance = $modal.open({
+			templateUrl: 'markerModalContent.html',
+		    	controller: adaythere.MarkerModalInstanceCtrl,
+		    	resolve: {
+			    	marker_body_content: function () {
+				    	return $scope.marker_body_content;
+			    	},
+		    		marker_title: function () {
+					return $scope.marker_title;
+				}
+		    	},
+		    	scope: $scope 
+		});
+
+		modalInstance.result.then(function () {
+			console.log ("Done marker");
+		}, function () {
+			console.log ('Modal dismissed at: ' + new Date());
+		});
+	};
+
+	$scope.set_marker_at_place = function (obj) {
+		var marker = new google.maps.Marker({
+			position: new google.maps.LatLng (obj.geometry.location.d, obj.geometry.location.e),
+		    	map: locationInitializer.map.get ()
+		});
+
+		google.maps.event.addListener (marker, "click", function () {
+			console.log (JSON.stringify(obj));
+			$scope.open_marker_modal (obj)
+
+		});
+
+		$scope.markers.push (marker);
+	};	
 }]);
+
+adaythere.MarkerModalInstanceCtrl = function ($scope, $modalInstance, marker_body_content, marker_title) {
+
+	$scope.marker_body_content = marker_body_content;
+	$scope.marker_title = marker_title;
+
+	$scope.selected = {
+		marker_body_content: $scope.marker_body_content
+	};
+	
+	$scope.ok = function () {
+		$modalInstance.close($scope.selected.marker_body_content);
+	};
+
+	$scope.cancel = function () {
+		$modalInstance.dismiss('cancel');
+	};
+};
 
 adaythere.controller ("menuCtrl", ["$scope", "$http", function ($scope, $http) {
 	$scope.userLogout = function( user) {
@@ -383,8 +583,6 @@ adaythere.controller ("menuCtrl", ["$scope", "$http", function ($scope, $http) {
 	$scope.userLogin = function (user) {
 		$http.get ("/usermenu?login=" + user)
 			.success (function(data, status, headers, config) {
-				//this.query_data = data;
-				//$scope.places = data;
 			}
 		);
 	};			
@@ -409,10 +607,9 @@ $(window).resize (function () {
 	var width = $(window).width();
 	var height = $(window).height();
 
-//	set_element_positions (width, height);
+//	ADT_set_element_positions (width, height);
 
-	set_section_height (height);
-
+	ADT_set_section_height (height);
 })
 
 
@@ -421,12 +618,11 @@ $(function () {
 	var width = $(window).width();
 	var height = $(window).height();
 	
-	set_section_height (height);
-//	set_element_positions (width, height);
+	ADT_set_section_height (height);
+//	ADT_set_element_positions (width, height);
 	console.log (width + " " + height);
 
-})
-
+});
 
 
 

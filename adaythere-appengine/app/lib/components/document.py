@@ -2,6 +2,7 @@
     represents a top level html 5 document
 """
 
+from app.lib.components.element import Elements
 
 class Html5Document:
 
@@ -33,7 +34,7 @@ class Html5Document:
                     <title>{0}</title>
         """.format(title)
 
-        self.elements = ""
+        self.elements = Elements()
         self.scripts = ""
         self.body = None
 
@@ -147,30 +148,18 @@ class Html5Document:
 
     def open_element(self, tag, attributes=None, text=""):
 
-        attribute_str = ""
-
-        if attributes is not None:
-            for k, v in attributes.iteritems():
-                if v is not None:
-                    attribute_str += ' {0}="{1}"'.format(k, v)
-                else :
-                    attribute_str += ' {0}'.format(k)
-
-        self.elements += """
-                <{0}{1}>{2}""".format(tag, attribute_str, text)
-
+        self.elements.open_element(tag, attributes, text)
         return self
 
     def append_to_element(self, text):
-        self.elements += text
 
+        self.elements.append_to_element(text)
         return self
 
 
     def close_element(self, tag):
 
-        self.elements += "</{0}>".format(tag)
-
+        self.elements.close_element(tag)
         return self
 
 
@@ -200,7 +189,7 @@ class Html5Document:
             </head>
         """
         self.html += self.body
-        self.html += self.elements
+        self.html += self.elements.get()
         self.html += self.scripts
         self.html += """
             </body>
