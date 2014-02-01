@@ -28,46 +28,59 @@ function ADT_google_reverse_lookup (latitude, longitude, handler_function) {
 	}, "json");
 }
 
-function ADT_GeoLocate () {
-	this.location = {
-
-	};
-
-	this.location.latitude = 48.422;
-	this.location.longitude = -123.408;
-	this.location.locality = "Victoria";
-	this.location.address = "Victoria, BC Canada";
+function ADT_GeoLocate (location_promise) {
+	this.location = {};
+	this.location_promise = location_promise;
+	this.default_location_set = false;
 }
 
-ADT_GeoLocate.prototype.ipinfo = function () {
+ADT_GeoLocate.prototype.setDefault = function () {
+
 	var self = this;
-	return $.get("http://ipinfo.io", function (response) {
-		var loc = response.loc.split(",");
-		self.location.latitude = loc[0];
-		self.location.longitude = loc[1];
-		self.location.locality = response.city;
-		self.location.city = response.city;
-		self.location.region = response.region;
-		self.location.country = response.country;
-	}, "jsonp");
-}
 
+	return this.location_promise.then (function (data) {
+		if (data) {
+			self.location = data;
+			self.default_location_set = true;
+		} else {
+
+			self.location.latitude = 48.422;
+			self.location.longitude = -123.408;
+			self.location.locality = "Victoria";
+			self.location.address = "Victoria, BC Canada";
+		}
+	}, function () {
+
+		self.location.latitude = 48.422;
+		self.location.longitude = -123.408;
+		self.location.locality = "Victoria";
+		self.location.address = "Victoria, BC Canada";
+	});
+}
 
 ADT_GeoLocate.prototype.geolocate = function () {
 	var self = this;
 	var deferred = $.Deferred ();
-	if (window.navigator.geolocation) {
 
-		window.navigator.geolocation.getCurrentPosition (function (position) {
-			self.location.latitude = position.coords.latitude;
-			self.location.longitude = position.coords.longitude;
-			deferred.resolve ();
-		}, function (error) {
-			deferred.reject ("Geolocation error: " + error.message);
-		}, {timeout:1000});	
-	} else {
-		deferred.reject ("Geolocation not enabled");
-	}
+	this.setDefault().then (function () {
+		if (self.default_location_set == true) {
+			deferred.resolve();
+		} else {
+			if (window.navigator.geolocation) {
+
+				window.navigator.geolocation.getCurrentPosition (function (position) {
+					self.location.latitude = position.coords.latitude;
+					self.location.longitude = position.coords.longitude;
+					deferred.resolve ();
+				}, function (error) {
+					deferred.reject ("Geolocation error: " + error.message);
+				}, {timeout:1000});	
+			} else {
+				deferred.reject ("Geolocation not enabled");
+			}
+		}
+
+	});
 
 	return deferred;
 }
@@ -154,13 +167,29 @@ ADT_GoogleReverseLookup.prototype.location = function () {
  * adaythere angular module
  */
 var adaythere = angular.module("adaythere", ['ui.bootstrap']);
-adaythere.data_store = {};
+
+adaythere.factory('safeApply', [function($rootScope) {
+	return function($scope, fn) {
+		var phase = $scope.$root.$$phase;
+		if(phase == '$apply' || phase == '$digest') {
+			if (fn) {
+				$scope.$eval(fn);
+			}
+		} else {
+			if (fn) {
+				$scope.$apply(fn);
+			} else {
+				$scope.$apply();
+			}
+		}
+	}
+}]);
 
 /*
  * Create location service
  */
-function ADT_LocationInitializerService () {
-	this.geoloc = new ADT_GeoLocate ();
+function ADT_LocationInitializerService (location) {
+	this.geoloc = new ADT_GeoLocate (location);
 	this.geocoder = new google.maps.Geocoder();
 	this.map = null;
 	this.autocomplete = null;
@@ -178,20 +207,26 @@ ADT_LocationInitializerService.prototype.initialize = function () {
 	}).always (function () {
 		self.map = new ADT_GoogleMap (self.geoloc.location.latitude, self.geoloc.location.longitude);
 
-		self.geoloc.google_reverse_lookup (function (response) {
-			var lookup = new ADT_GoogleReverseLookup (response);
-			var res = lookup.location ();
-			if (res.status) {
-				self.geoloc.setRegion (res.result);
-			}
+		var input = document.getElementById ("pac_input");
+		var div = document.getElementById ("search_util");
 
-			var input = document.getElementById ("pac_input");
-			var div = document.getElementById ("search_util");
+		self.autocomplete = new google.maps.places.Autocomplete(input);
+		self.autocomplete.bindTo("bounds", self.map.get ());
 
-			self.autocomplete = new google.maps.places.Autocomplete(input);
-			self.autocomplete.bindTo("bounds", self.map.get ());
+		if (self.geoloc.location.address) {
 			deferred.resolve (self.geoloc);
-		});
+		} else {
+
+			self.geoloc.google_reverse_lookup (function (response) {
+				var lookup = new ADT_GoogleReverseLookup (response);
+				var res = lookup.location ();
+				if (res.status) {
+					self.geoloc.setRegion (res.result);
+				}
+
+				deferred.resolve (self.geoloc);
+			});
+		}
 	});
 
 	return deferred;
@@ -219,9 +254,9 @@ ADT_LocationInitializerService.prototype.placeChange = function (scope, place) {
 	});
 }
 
-adaythere.factory ("locationInitializer", function () {
-	return new ADT_LocationInitializerService ();
-});
+adaythere.factory ("locationInitializer", [ "profileService", function (profileService) {
+	return new ADT_LocationInitializerService (profileService.getLocation());
+}]);
 
 /*
  * Create Profile service
@@ -231,19 +266,37 @@ function ADT_ProfileService ($http, $q) {
 	this.$q = $q;
 }
 
+ADT_ProfileService.prototype.getLocation = function () {
+	var deferred = this.$q.defer ();
+
+	this.getUserProfile ().then(function (data) {
+		if (data.location) {
+			deferred.resolve (data.location);
+		} else {
+			deferred.resolve (null);
+		}
+	}, function (data, status) {
+		console.error (status, data);
+	});
+
+	return deferred.promise;	
+}
+
 ADT_ProfileService.prototype.getUserProfile = function () {
 	var deferred = this.$q.defer ();
+	var self = this;
 
 	if (this.profile_data) {
 		deferred.resolve (this.profile_data)
-	} else { 
-
+		this.update = false;
+	} else {
 		this.$http({
 			method: "GET",
 			url: "/profile"
 		}).success (function (data, status, headers, config) {
-			this.profile_data = data;
-			deferred.resolve (data);
+			self.profile_data = data; 
+			self.updated = true;    
+			deferred.resolve (data); 
 		}).error (function (data, status, headers, config) {
 			deferred.reject (data, status);
 		});
@@ -253,14 +306,16 @@ ADT_ProfileService.prototype.getUserProfile = function () {
 }
 
 ADT_ProfileService.prototype.setUserLocation = function (location) {
+	var self = this;
+
 	this.$http({
 		method: "POST",
 		url: "/profile",
 		data: { location: location }
 	}).success (function (data, status, headers, config) {
-		this.profile_data = data;
+		self.profile_data = data;
 	}).error (function (data, status, headers, config) {
-		console.log (status, data);
+		console.error (status, data);
 	});
 
 	console.log (location);
@@ -299,34 +354,35 @@ adaythere.controller ("profileCtrl", ["$scope", "$modal", "profileService", func
 
 	$scope.profile_body_content = { "error":"no profile" };
 
-	profileService.getUserProfile ().then (function (data) {
-		$scope.profile_body_content = data;
-	}, function (data, status) {
-		console.log (status);
-		console.log (data);
-	});
 
-	console.log ($scope);
 
 	$scope.profile = function () {
 
-		var modalInstance = $modal.open({
-			templateUrl: 'profileModalContent.html',
-		    	controller: adaythere.ProfileModalInstanceCtrl,
-		    	resolve: {
-			    	profile_body_content: function () {
-				    	return $scope.profile_body_content;
-			    	}
-		    	},
-		    	scope: $scope 
+		profileService.getUserProfile ().then (function (data) {
+			$scope.profile_body_content = data;
+
+			var modalInstance = $modal.open({
+				templateUrl: 'profileModalContent.html',
+			    	controller: adaythere.ProfileModalInstanceCtrl,
+			    	resolve: {
+				    	profile_body_content: function () {
+					    	return $scope.profile_body_content;
+				    	}	
+			    	},
+			    	scope: $scope 
+			});
+
+			modalInstance.result.then(function (selectedItem) {
+				console.log (selectedItem)
+				$scope.selected = selectedItem;
+			}, function () {
+				console.log ('Modal dismissed at: ' + new Date());
+			});
+
+		}, function (data, status) {
+			console.error (status, data);
 		});
 
-		modalInstance.result.then(function (selectedItem) {
-			console.log (selectedItem)
-			$scope.selected = selectedItem;
-		}, function () {
-			console.log ('Modal dismissed at: ' + new Date());
-		});
 	};
 
 }]);
@@ -350,7 +406,8 @@ adaythere.ProfileModalInstanceCtrl = function ($scope, $modalInstance, profile_b
 
 
 
-adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "locationInitializer", "profileService", function ($scope, $modal, locationInitializer, profileService) {
+adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "locationInitializer", "profileService", "safeApply", function (
+			$scope, $modal, locationInitializer, profileService, safeApply) {
 	$scope.location = locationInitializer.getLocation ();
 	$scope.clicked = {
 		latitude: "",
@@ -374,7 +431,7 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "locationInitializer",
 	var lastClicked;
 
 	locationInitializer.initialize ().then (function (geoloc) {
-		$scope.$apply(function () {
+		safeApply($scope, function () {
 			$scope.location = geoloc.location;
 		});
 

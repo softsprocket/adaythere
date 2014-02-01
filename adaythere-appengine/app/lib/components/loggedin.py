@@ -4,7 +4,7 @@ from webapp2_extras import i18n
 
 class LoggedInNavView:
 
-    def __init__(self, userModel):
+    def __init__(self, db_user):
 
         self.html = """
             <li class="dropdown" ng-controller="loginCtrl">
@@ -23,7 +23,7 @@ class LoggedInNavView:
                     <a ng-click="profile()">Profile</a>
                 </ul>
             </li>
-        """.format(userModel.name())
+        """.format(db_user.name)
 
 
     def get(self):

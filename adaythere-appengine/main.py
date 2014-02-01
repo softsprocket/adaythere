@@ -22,7 +22,7 @@ from app.lib.google.maps import Maps
 import logging
 import json
 import inspect
-from app.lib.components.user import UserModel
+from app.lib.db.user import User
 from app.lib.components.genmodal import Modal, ProfileModal, MarkerModal
 from app.lib.components.element import Elements
 
@@ -75,8 +75,8 @@ class MainHandler(webapp2.RequestHandler):
             logging.info("user federated_provider: " + str(user.federated_provider()));
             logging.info("user auth_domain: " + str(user.auth_domain()));
 
-            userModel = UserModel(user)
-            navView = LoggedInNavView(userModel)
+            db_user = User.create_user_record_from_google_user(user)
+            navView = LoggedInNavView(db_user)
 
 
         adaythere.open_element("header", {"id":"page_header"})\
