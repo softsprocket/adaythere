@@ -1,5 +1,4 @@
-
-function set_element_positions (width, height) {
+function ADT_set_element_positions (width, height) {
 
 	map_width = Math.floor(width * 0.7);
 	sidebar_width = Math.floor(width * 0.3); 
@@ -7,13 +6,14 @@ function set_element_positions (width, height) {
 	$("#sidebar_section").width (sidebar_width); 
 }
 
-function set_section_height (height) {
+function ADT_set_section_height (height) {
 	h1 = $("#page_header").height();
 	h2 = $("#page_footer").height();
 	val = height - (h1 + h2);
 	$("#map_section").height(val);
 	$("#sidebar_section").height(val);
 }
+
 
 /*
  * ADT_GeoLocate location information
@@ -28,46 +28,59 @@ function ADT_google_reverse_lookup (latitude, longitude, handler_function) {
 	}, "json");
 }
 
-function ADT_GeoLocate () {
-	this.location = {
-
-	};
-
-	this.location.latitude = 48.422;
-	this.location.longitude = -123.408;
-	this.location.locality = "Victoria";
-	this.location.address = "Victoria, BC Canada";
+function ADT_GeoLocate (location_promise) {
+	this.location = {};
+	this.location_promise = location_promise;
+	this.default_location_set = false;
 }
 
-ADT_GeoLocate.prototype.ipinfo = function () {
+ADT_GeoLocate.prototype.setDefault = function () {
+
 	var self = this;
-	return $.get("http://ipinfo.io", function (response) {
-		var loc = response.loc.split(",");
-		self.location.latitude = loc[0];
-		self.location.longitude = loc[1];
-		self.location.locality = response.city;
-		self.location.city = response.city;
-		self.location.region = response.region;
-		self.location.country = response.country;
-	}, "jsonp");
-}
 
+	return this.location_promise.then (function (data) {
+		if (data) {
+			self.location = data;
+			self.default_location_set = true;
+		} else {
+
+			self.location.latitude = 48.422;
+			self.location.longitude = -123.408;
+			self.location.locality = "Victoria";
+			self.location.address = "Victoria, BC Canada";
+		}
+	}, function () {
+
+		self.location.latitude = 48.422;
+		self.location.longitude = -123.408;
+		self.location.locality = "Victoria";
+		self.location.address = "Victoria, BC Canada";
+	});
+}
 
 ADT_GeoLocate.prototype.geolocate = function () {
 	var self = this;
 	var deferred = $.Deferred ();
-	if (window.navigator.geolocation) {
 
-		window.navigator.geolocation.getCurrentPosition (function (position) {
-			self.location.latitude = position.coords.latitude;
-			self.location.longitude = position.coords.longitude;
-			deferred.resolve ();
-		}, function (error) {
-			deferred.reject ("Geolocation error: " + error.message);
-		}, {timeout:1000});	
-	} else {
-		deferred.reject ("Geolocation not enabled");
-	}
+	this.setDefault().then (function () {
+		if (self.default_location_set == true) {
+			deferred.resolve();
+		} else {
+			if (window.navigator.geolocation) {
+
+				window.navigator.geolocation.getCurrentPosition (function (position) {
+					self.location.latitude = position.coords.latitude;
+					self.location.longitude = position.coords.longitude;
+					deferred.resolve ();
+				}, function (error) {
+					deferred.reject ("Geolocation error: " + error.message);
+				}, {timeout:1000});	
+			} else {
+				deferred.reject ("Geolocation not enabled");
+			}
+		}
+
+	});
 
 	return deferred;
 }
@@ -153,13 +166,30 @@ ADT_GoogleReverseLookup.prototype.location = function () {
 /*
  * adaythere angular module
  */
-var adaythere = angular.module("adaythere", []);
+var adaythere = angular.module("adaythere", ['ui.bootstrap']);
+
+adaythere.factory('safeApply', [function($rootScope) {
+	return function($scope, fn) {
+		var phase = $scope.$root.$$phase;
+		if(phase == '$apply' || phase == '$digest') {
+			if (fn) {
+				$scope.$eval(fn);
+			}
+		} else {
+			if (fn) {
+				$scope.$apply(fn);
+			} else {
+				$scope.$apply();
+			}
+		}
+	}
+}]);
 
 /*
  * Create location service
  */
-function ADT_LocationInitializerService () {
-	this.geoloc = new ADT_GeoLocate ();
+function ADT_LocationInitializerService (location) {
+	this.geoloc = new ADT_GeoLocate (location);
 	this.geocoder = new google.maps.Geocoder();
 	this.map = null;
 	this.autocomplete = null;
@@ -177,20 +207,26 @@ ADT_LocationInitializerService.prototype.initialize = function () {
 	}).always (function () {
 		self.map = new ADT_GoogleMap (self.geoloc.location.latitude, self.geoloc.location.longitude);
 
-		self.geoloc.google_reverse_lookup (function (response) {
-			var lookup = new ADT_GoogleReverseLookup (response);
-			var res = lookup.location ();
-			if (res.status) {
-				self.geoloc.setRegion (res.result);
-			}
+		var input = document.getElementById ("pac_input");
+		var div = document.getElementById ("search_util");
 
-			var input = document.getElementById ("pac_input");
-			var div = document.getElementById ("search_util");
+		self.autocomplete = new google.maps.places.Autocomplete(input);
+		self.autocomplete.bindTo("bounds", self.map.get ());
 
-			self.autocomplete = new google.maps.places.Autocomplete(input);
-			self.autocomplete.bindTo("bounds", self.map.get ());
+		if (self.geoloc.location.address) {
 			deferred.resolve (self.geoloc);
-		});
+		} else {
+
+			self.geoloc.google_reverse_lookup (function (response) {
+				var lookup = new ADT_GoogleReverseLookup (response);
+				var res = lookup.location ();
+				if (res.status) {
+					self.geoloc.setRegion (res.result);
+				}
+
+				deferred.resolve (self.geoloc);
+			});
+		}
 	});
 
 	return deferred;
@@ -218,15 +254,160 @@ ADT_LocationInitializerService.prototype.placeChange = function (scope, place) {
 	});
 }
 
-adaythere.factory ("locationInitializer", function () {
-	return new ADT_LocationInitializerService ();
-});
+adaythere.factory ("locationInitializer", [ "profileService", function (profileService) {
+	return new ADT_LocationInitializerService (profileService.getLocation());
+}]);
+
+/*
+ * Create Profile service
+ */
+function ADT_ProfileService ($http, $q) {
+	this.$http = $http;
+	this.$q = $q;
+}
+
+ADT_ProfileService.prototype.getLocation = function () {
+	var deferred = this.$q.defer ();
+
+	this.getUserProfile ().then(function (data) {
+		if (data.location) {
+			deferred.resolve (data.location);
+		} else {
+			deferred.resolve (null);
+		}
+	}, function (data, status) {
+		console.error (status, data);
+	});
+
+	return deferred.promise;	
+}
+
+ADT_ProfileService.prototype.getUserProfile = function () {
+	var deferred = this.$q.defer ();
+	var self = this;
+
+	if (this.profile_data) {
+		deferred.resolve (this.profile_data)
+		this.update = false;
+	} else {
+		this.$http({
+			method: "GET",
+			url: "/profile"
+		}).success (function (data, status, headers, config) {
+			self.profile_data = data; 
+			self.updated = true;    
+			deferred.resolve (data); 
+		}).error (function (data, status, headers, config) {
+			deferred.reject (data, status);
+		});
+	}
+
+	return deferred.promise;
+}
+
+ADT_ProfileService.prototype.setUserLocation = function (location) {
+	var self = this;
+
+	this.$http({
+		method: "POST",
+		url: "/profile",
+		data: { location: location }
+	}).success (function (data, status, headers, config) {
+		self.profile_data = data;
+	}).error (function (data, status, headers, config) {
+		console.error (status, data);
+	});
+
+	console.log (location);
+}
+
+adaythere.factory ("profileService", ["$http", "$q", function ($http, $q) {
+	return new ADT_ProfileService ($http, $q);
+}]);
 
 /*
  * adaythere controllers
  */
 
-adaythere.controller ("sidebarCtrl", ["$scope", "locationInitializer", function ($scope, locationInitializer) {
+adaythere.controller ("loginCtrl", ["$scope", "$http", function ($scope, $http) {
+
+	$scope.googlelogin = function () {
+		$http.get ("/login?method=google")
+			.success (function(data, status, headers, config) {
+				window.location.href = data.url;
+			}
+		);
+	};
+	
+	$scope.googlelogout = function () {
+		$http.get ("/logout?method=google")
+			.success (function(data, status, headers, config) {
+				window.location.href = data.url;
+			}
+		);
+	};
+}]);
+
+
+
+adaythere.controller ("profileCtrl", ["$scope", "$modal", "profileService", function ($scope, $modal, profileService) {
+
+	$scope.profile_body_content = { "error":"no profile" };
+
+
+
+	$scope.profile = function () {
+
+		profileService.getUserProfile ().then (function (data) {
+			$scope.profile_body_content = data;
+
+			var modalInstance = $modal.open({
+				templateUrl: 'profileModalContent.html',
+			    	controller: adaythere.ProfileModalInstanceCtrl,
+			    	resolve: {
+				    	profile_body_content: function () {
+					    	return $scope.profile_body_content;
+				    	}	
+			    	},
+			    	scope: $scope 
+			});
+
+			modalInstance.result.then(function (selectedItem) {
+				console.log (selectedItem)
+				$scope.selected = selectedItem;
+			}, function () {
+				console.log ('Modal dismissed at: ' + new Date());
+			});
+
+		}, function (data, status) {
+			console.error (status, data);
+		});
+
+	};
+
+}]);
+
+adaythere.ProfileModalInstanceCtrl = function ($scope, $modalInstance, profile_body_content) {
+
+	$scope.profile_body_content = profile_body_content;
+
+	$scope.selected = {
+		profile_body_content: $scope.profile_body_content
+	};
+	
+	$scope.ok = function () {
+		$modalInstance.close($scope.selected.profile_body_content);
+	};
+
+	$scope.cancel = function () {
+		$modalInstance.dismiss('cancel');
+	};
+};
+
+
+
+adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "locationInitializer", "profileService", "safeApply", function (
+			$scope, $modal, locationInitializer, profileService, safeApply) {
 	$scope.location = locationInitializer.getLocation ();
 	$scope.clicked = {
 		latitude: "",
@@ -250,7 +431,7 @@ adaythere.controller ("sidebarCtrl", ["$scope", "locationInitializer", function 
 	var lastClicked;
 
 	locationInitializer.initialize ().then (function (geoloc) {
-		$scope.$apply(function () {
+		safeApply($scope, function () {
 			$scope.location = geoloc.location;
 		});
 
@@ -274,7 +455,7 @@ adaythere.controller ("sidebarCtrl", ["$scope", "locationInitializer", function 
 		google.maps.event.addListener (locationInitializer.map.get (), "click", function(event) {
 			timerId = window.setTimeout (function () {
 			
-				ADT_google_reverse_lookup (event.latLng.lat (), event.latLng.lng (), function (response) {
+			ADT_google_reverse_lookup (event.latLng.lat (), event.latLng.lng (), function (response) {
 					var rlu = new ADT_GoogleReverseLookup (response);
 					var clicked = rlu.location ().result;
 
@@ -322,7 +503,8 @@ adaythere.controller ("sidebarCtrl", ["$scope", "locationInitializer", function 
 		});
 	});
 
-	$scope.go = function () {
+
+	$scope.centre_map_at = function () {
 		var address = $("#pac_input").val ();
 		locationInitializer.geocoder.geocode( { "address": address}, function(results, status) {
 			if (status == google.maps.GeocoderStatus.OK) {
@@ -334,6 +516,13 @@ adaythere.controller ("sidebarCtrl", ["$scope", "locationInitializer", function 
 		});
 
 	};
+
+	$scope.make_default_location = function () {
+		console.log ($scope.location);
+		profileService.setUserLocation ($scope.location);
+	}
+
+	$scope.places_array = [];
 
 	$scope.search_places = function () {
 		if (!lastClicked) {
@@ -357,17 +546,85 @@ adaythere.controller ("sidebarCtrl", ["$scope", "locationInitializer", function 
 			types: sel_types
 		};
 
+		$scope.places_array = [];
 		service.nearbySearch(request, function (results, status) {
 			if (status == google.maps.places.PlacesServiceStatus.OK) {
-				for (var i = 0; i < results.length; i++) {
-					var place = results[i];
-					console.log (JSON.stringify (place));
-				}
+				$scope.$apply(function () {
+					for (var i = 0; i < results.length; i++) {
+						var place = results[i];
+						$scope.places_array.push (place);
+					}
+				
+			        });		
+				
 			}
 		});
 
 	};
+
+	$scope.markers = [];
+
+
+	$scope.open_marker_modal = function (obj) {
+		$scope.marker_body_content = obj;
+		$scope.marker_title = obj.name;
+		$scope.types = obj.types;
+		$scope.vicinity = obj.vicinity;
+
+		var modalInstance = $modal.open({
+			templateUrl: 'markerModalContent.html',
+		    	controller: adaythere.MarkerModalInstanceCtrl,
+		    	resolve: {
+			    	marker_body_content: function () {
+				    	return $scope.marker_body_content;
+			    	},
+		    		marker_title: function () {
+					return $scope.marker_title;
+				}
+		    	},
+		    	scope: $scope 
+		});
+
+		modalInstance.result.then(function () {
+			console.log ("Done marker");
+		}, function () {
+			console.log ('Modal dismissed at: ' + new Date());
+		});
+	};
+
+	$scope.set_marker_at_place = function (obj) {
+		var marker = new google.maps.Marker({
+			position: new google.maps.LatLng (obj.geometry.location.d, obj.geometry.location.e),
+		    	map: locationInitializer.map.get ()
+		});
+
+		google.maps.event.addListener (marker, "click", function () {
+			console.log (JSON.stringify(obj));
+			$scope.open_marker_modal (obj)
+
+		});
+
+		$scope.markers.push (marker);
+	};	
 }]);
+
+adaythere.MarkerModalInstanceCtrl = function ($scope, $modalInstance, marker_body_content, marker_title) {
+
+	$scope.marker_body_content = marker_body_content;
+	$scope.marker_title = marker_title;
+
+	$scope.selected = {
+		marker_body_content: $scope.marker_body_content
+	};
+	
+	$scope.ok = function () {
+		$modalInstance.close($scope.selected.marker_body_content);
+	};
+
+	$scope.cancel = function () {
+		$modalInstance.dismiss('cancel');
+	};
+};
 
 adaythere.controller ("menuCtrl", ["$scope", "$http", function ($scope, $http) {
 	$scope.userLogout = function( user) {
@@ -383,8 +640,6 @@ adaythere.controller ("menuCtrl", ["$scope", "$http", function ($scope, $http) {
 	$scope.userLogin = function (user) {
 		$http.get ("/usermenu?login=" + user)
 			.success (function(data, status, headers, config) {
-				//this.query_data = data;
-				//$scope.places = data;
 			}
 		);
 	};			
@@ -409,10 +664,9 @@ $(window).resize (function () {
 	var width = $(window).width();
 	var height = $(window).height();
 
-//	set_element_positions (width, height);
+//	ADT_set_element_positions (width, height);
 
-	set_section_height (height);
-
+	ADT_set_section_height (height);
 })
 
 
@@ -421,12 +675,11 @@ $(function () {
 	var width = $(window).width();
 	var height = $(window).height();
 	
-	set_section_height (height);
-//	set_element_positions (width, height);
+	ADT_set_section_height (height);
+//	ADT_set_element_positions (width, height);
 	console.log (width + " " + height);
 
-})
-
+});
 
 
 

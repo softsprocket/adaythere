@@ -1,34 +1,24 @@
 
 from webapp2_extras import i18n
 
-class LoggedOutNavModel:
-
-    def __init__(self):
-        None
-
-    def get(self):
-        return ""
-
 
 class LoggedOutNavView:
 
     def __init__(self):
 
-        menuitems = [
-            { 
-                'function': 'userlogin(user)',
-                'text': i18n.gettext('login')
-            }
-        ]
-
         self.html = """
-                <ul ng-controller="menuCtrl">"""
-                                                                                 
-        for item in menuitems:
-            self.html += '<li><a href="#" ng-click="{0}">{1}</a></li>'.format(item['function'], item['text'])                                                                          
-                                                                                                                 
-        self.html += """            
-                </ul>"""
+        <ul class="page-header-nav">
+            <li class="dropdown" ng-controller="loginCtrl" style="list-style:none">
+                <a href class="dropdown-toggle">
+                    login
+                </a>
+                <ul class="dropdown-menu adt-nav-menu-button">
+                        <a ng-click="googlelogin()">Google Login</a>
+                </ul>
+            </li>
+        </ul>
+        """
+
 
     def get(self):
         return self.html
