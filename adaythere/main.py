@@ -105,10 +105,10 @@ class MainHandler(webapp2.RequestHandler):
             .open_element("tabset", {"justified":"true"})\
             .open_element("tab", {"heading":"Map Tools"})\
             .open_element("accordion", {"close-others":"false"})\
-            .open_element("accordion-group",{"heading":"Change Location"})\
+            .open_element("accordion-group",{"heading":"Location"})\
             .append_to_element(mapSearchView.get())\
             .close_element("accordion-group")\
-            .open_element("accordion-group", {"heading":"Places Search"})\
+            .open_element("accordion-group", {"heading":"Places"})\
             .append_to_element(placesSearchView.get())\
             .close_element("accordion-group")\
             .close_element("accordion")\

@@ -9,7 +9,7 @@ class Maps:
 
     def get_script_src(self):
 
-        return self.api_url + "?libraries=places&key=" + self.app_key + "&sensor=" + self.sensor
+        return self.api_url + "?libraries=places,geometry&key=" + self.app_key + "&sensor=" + self.sensor
     
 
 
