@@ -39,7 +39,8 @@ ADT_GeoLocate.prototype.setDefault = function () {
 	var self = this;
 
 	return this.location_promise.then (function (data) {
-		if (data) {
+		if (data && !isNaN(data.latitude)) {
+			console.log ("Data", data);
 			self.location = data;
 			self.default_location_set = true;
 		} else {
@@ -329,6 +330,91 @@ adaythere.factory ("profileService", ["$http", "$q", function ($http, $q) {
  * adaythere controllers
  */
 
+function ADT_BoundingCircle (map) {
+	this.map = map;
+	this.boundsCircle = null;
+	this.circleOptions = {
+		strokeColor: '#FF0000',
+		strokeOpacity: 0.8,
+		strokeWeight: 2,
+		fillColor: '#FF0000',
+		fillOpacity: 0.35,
+		map: this.map,
+		clickable: true
+	};
+}
+
+ADT_BoundingCircle.prototype.updateBounds = function (bounds) {
+	var sw = bounds.getSouthWest();
+	var ctr = bounds.getCenter();
+	var lat;
+	var lng;
+
+	if (sw.lat () > sw.lng ()) {
+		lat = sw.lat ();
+		lng = ctr.lng ();
+	} else {
+		lat = ctr.lat ();
+		lng = sw.lng ();
+	}
+
+	var left = new google.maps.LatLng (lat, lng);
+	var diff = google.maps.geometry.spherical.computeDistanceBetween(left, ctr);
+
+	if (diff > 50000) {
+		diff = 50000;
+	}
+
+	this.circleOptions.center = ctr;
+	this.circleOptions.radius = diff;
+}
+
+ADT_BoundingCircle.prototype.setCircle = function () {
+
+	if (this.boundsCircle) {
+		this.boundsCircle.setMap (null);
+	}
+
+	this.boundsCircle = new google.maps.Circle(this.circleOptions);
+	if (this.clickListener) {
+		google.maps.event.addListener (this.boundsCircle, "click", this.clickListener);
+	}
+}
+
+ADT_BoundingCircle.prototype.unsetCircle = function () {
+	if (this.boundsCircle) {
+		this.boundsCircle.setMap (null);
+	}
+}
+
+ADT_BoundingCircle.prototype.setCenter = function (center) {
+	this.circleOptions.center = center;
+}
+
+ADT_BoundingCircle.prototype.getCenter = function () {
+	return this.circleOptons.center;
+}
+
+ADT_BoundingCircle.prototype.setRadius = function (radius) {
+	this.circleOptions.radius = radius;
+}
+
+ADT_BoundingCircle.prototype.getRadius = function () {
+	return this.circleOptions.radius ? this.circleOptions.radius : 0;
+}
+
+ADT_BoundingCircle.prototype.updateStatus = function (visible) {
+	if (visible) {
+		this.setCircle ();
+	} else {
+		this.unsetCircle ();
+	}
+}
+
+ADT_BoundingCircle.prototype.addClickListener = function (listener) {
+	this.clickListener = listener;
+}
+
 adaythere.controller ("loginCtrl", ["$scope", "$http", function ($scope, $http) {
 
 	$scope.googlelogin = function () {
@@ -417,25 +503,56 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "locationInitializer",
 	}
 
 
-	$scope.types = [ "airport", "amusement_park", "aquarium", "art_gallery", "bakery", "bar", 
-		"beauty_salon", "bicycle_store", "book_store", "bowling_alley", "cafe", "casino", 
-		"cemetery", "church", "city_hall", "clothing_store", "department_store", "establishment",
-		"florist", "food", "gym", "hair_care", "hindu_temple", "jewelry_store", "library",
-		"liquor_store", "meal_takeaway", "mosque", "movie_theater", "museum", "night_club",
-		"park", "place_of_worship", "restaurant", "shoe_store", "shopping_mall", "spa", "stadium",
-		"store", "synagogue", "university", "zoo"
+	$scope.types = [
+		"amusement_park",
+		"aquarium",
+		"art_gallery",
+		"bakery",
+		"bar",
+		"beauty_salon",
+		"bicycle_store",
+		"book_store",
+		"bowling_alley",
+		"cafe",
+		"casino",
+		"clothing_store",
+		"florist",
+		"food",
+		"grocery_or_supermarket",
+		"hair_care",
+		"jewelry_store",
+		"library",
+		"movie_theater",
+		"museum",
+		"night_club",
+		"park",
+		"restaurant",
+		"shoe_store",
+		"shopping_mall",
+		"spa",
+		"stadium",
+		"store",
+		"zoo"
 	];
 
-	$scope.type = "all";
+	$scope.search = { selected_type: "all" };
 
-	var lastClicked;
+	var boundsCircle;
+	var search_area_is_visible = false;
 
 	locationInitializer.initialize ().then (function (geoloc) {
 		safeApply($scope, function () {
 			$scope.location = geoloc.location;
+			$scope.clicked = $scope.location;
 		});
 
 		var moved = false;
+		boundsCircle = new ADT_BoundingCircle (locationInitializer.map.get ());
+
+		google.maps.event.addListener(locationInitializer.map.get (), 'bounds_changed', function() {
+			boundsCircle.updateBounds (locationInitializer.map.get ().getBounds());
+			boundsCircle.updateStatus (search_area_is_visible);
+		});
 
 		google.maps.event.addListener (locationInitializer.map.get (), "center_changed", function() {
 			var latlng = locationInitializer.map.get ().getCenter();
@@ -446,31 +563,42 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "locationInitializer",
 
 			$scope.$apply(function () {
 				$scope.location = locationInitializer.geoloc.location;
+				$scope.clicked = $scope.location;
 			});
 
 		});
 
 
 		var timerId;
-		google.maps.event.addListener (locationInitializer.map.get (), "click", function(event) {
+		var set_search_location = function (event) {
 			timerId = window.setTimeout (function () {
 			
+			locationInitializer.map.get ().setCenter(event.latLng);
+
+			boundsCircle.setCenter (event.latLng);
+			boundsCircle.updateStatus (search_area_is_visible);
+
 			ADT_google_reverse_lookup (event.latLng.lat (), event.latLng.lng (), function (response) {
 					var rlu = new ADT_GoogleReverseLookup (response);
 					var clicked = rlu.location ().result;
 
 					clicked.latitude = event.latLng.lat ();
 					clicked.longitude = event.latLng.lng ();
-					lastClicked = event.latLng;
+
+
 
 					$scope.$apply(function () {
 						$scope.clicked = clicked;
 					});
+
 				});
 
 			}, 250);
 
-		});
+		};
+
+		google.maps.event.addListener (locationInitializer.map.get (), "click", set_search_location);
+		boundsCircle.addClickListener (set_search_location);
 
 		google.maps.event.addListener (locationInitializer.map.get (), "dblclick", function(event) {
 			window.clearTimeout (timerId);
@@ -525,26 +653,23 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "locationInitializer",
 	$scope.places_array = [];
 
 	$scope.search_places = function () {
-		if (!lastClicked) {
-			console.log ("No click yet");
-			return;
-		}
 
-		console.log ($scope.type);
+		console.log ($scope.search.selected_type);
 		service = locationInitializer.map.placesService;
 
 		var sel_types = [];
-		if (!$scope.type || $scope.type == "all") {
+		if (!$scope.search.selected_type || $scope.search.selected_type == "all") {
 			sel_types = $scope.types;
 		} else {
-			sel_types.push ($scope.type);
+			sel_types.push ($scope.search.selected_type);
 		}	
 
 		var request = {
-			location: lastClicked,
-			radius: "500",
-			types: sel_types
+			location: new google.maps.LatLng ($scope.clicked.latitude, $scope.clicked.longitude),
+			radius: boundsCircle.getRadius ()
 		};
+
+		request.types = sel_types;
 
 		$scope.places_array = [];
 		service.nearbySearch(request, function (results, status) {
@@ -560,6 +685,13 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "locationInitializer",
 			}
 		});
 
+	};
+
+	$scope.show_search_area = function () {
+		console.log ("show it");
+
+		search_area_is_visible = !search_area_is_visible;
+		boundsCircle.updateStatus (search_area_is_visible);	
 	};
 
 	$scope.markers = [];
@@ -593,6 +725,19 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "locationInitializer",
 	};
 
 	$scope.set_marker_at_place = function (obj) {
+		if (!obj.geometry) {
+			obj.geometry = {
+				location: {
+					d: obj.latitude,
+					e: obj.longitude
+				}
+			};
+
+			obj.name = $("#pac_input").val();
+			obj.vicinity = obj.address;
+			obj.types= [];
+		}
+
 		var marker = new google.maps.Marker({
 			position: new google.maps.LatLng (obj.geometry.location.d, obj.geometry.location.e),
 		    	map: locationInitializer.map.get ()
