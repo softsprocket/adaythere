@@ -13,6 +13,7 @@ from app.lib.components.loggedout import LoggedOutNavView
 from app.lib.components.sidebar import SidebarHeaderView
 from app.lib.components.sidebar import MapSearchView
 from app.lib.components.sidebar import PlacesSearchView
+from app.lib.components.sidebar import MarkersView
 import app.places
 import app.login
 import app.profile
@@ -64,6 +65,7 @@ class MainHandler(webapp2.RequestHandler):
         ])
 
         navView = None
+        logged_in = False
         if user is None:
             navView = LoggedOutNavView()
             logging.info("user not logged in")
@@ -77,6 +79,7 @@ class MainHandler(webapp2.RequestHandler):
 
             db_user = User.create_user_record_from_google_user(user)
             navView = LoggedInNavView(db_user)
+            logged_in = True
 
 
         adaythere.open_element("header", {"id":"page_header"})\
@@ -91,9 +94,10 @@ class MainHandler(webapp2.RequestHandler):
             .close_element("section")
 
         sidebarHeaderView = SidebarHeaderView();
-        mapSearchView = MapSearchView();
-        placesSearchView = PlacesSearchView();
-        
+        mapSearchView = MapSearchView(logged_in);
+        placesSearchView = PlacesSearchView(logged_in);
+        markersView = MarkersView(logged_in);
+
         profileModal = ProfileModal()
         markerModal = MarkerModal()
 
@@ -110,6 +114,9 @@ class MainHandler(webapp2.RequestHandler):
             .close_element("accordion-group")\
             .open_element("accordion-group", {"heading":"Places"})\
             .append_to_element(placesSearchView.get())\
+            .close_element("accordion-group")\
+            .open_element("accordion-group", {"heading":"Markers"})\
+            .append_to_element(markersView.get())\
             .close_element("accordion-group")\
             .close_element("accordion")\
             .close_element("tab")\

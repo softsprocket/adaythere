@@ -654,7 +654,6 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "locationInitializer",
 
 	$scope.search_places = function () {
 
-		console.log ($scope.search.selected_type);
 		service = locationInitializer.map.placesService;
 
 		var sel_types = [];
@@ -688,14 +687,32 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "locationInitializer",
 	};
 
 	$scope.show_search_area = function () {
-		console.log ("show it");
-
 		search_area_is_visible = !search_area_is_visible;
 		boundsCircle.updateStatus (search_area_is_visible);	
 	};
 
 	$scope.markers = [];
 
+	$scope.clear_all_markers = function () {
+		for (var index in $scope.markers) {
+			var marker = $scope.markers[index].marker;
+			marker.setMap (null);
+		}
+		$scope.markers = [];	
+	};
+
+	$scope.remove_marker = function (marker) {
+		marker.marker.setMap (null);
+		var new_markers = [];
+
+		for (var index in $scope.markers) {
+			if (marker != $scope.markers[index]) {
+				new_markers.push ($scope.markers[index]);
+			}
+		}
+
+		$scope.markers = new_markers;
+	};
 
 	$scope.open_marker_modal = function (obj) {
 		$scope.marker_body_content = obj;
@@ -738,18 +755,25 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "locationInitializer",
 			obj.types= [];
 		}
 
-		var marker = new google.maps.Marker({
+		for (var index in $scope.markers) {
+			if ($scope.markers[index] == obj) {
+				return;
+			}
+		}
+
+		obj.marker = new google.maps.Marker({
 			position: new google.maps.LatLng (obj.geometry.location.d, obj.geometry.location.e),
 		    	map: locationInitializer.map.get ()
 		});
 
-		google.maps.event.addListener (marker, "click", function () {
-			console.log (JSON.stringify(obj));
+		google.maps.event.addListener (obj.marker, "click", function () {
 			$scope.open_marker_modal (obj)
 
 		});
 
-		$scope.markers.push (marker);
+		safeApply ($scope, function () {
+			$scope.markers.push (obj);
+		});
 	};	
 }]);
 
@@ -771,24 +795,6 @@ adaythere.MarkerModalInstanceCtrl = function ($scope, $modalInstance, marker_bod
 	};
 };
 
-adaythere.controller ("menuCtrl", ["$scope", "$http", function ($scope, $http) {
-	$scope.userLogout = function( user) {
-		$http.get ( "/usermenu?logout=" + user)
-			.success (function(data, status, headers, config) {
-				//this.query_data = data;
-				//$scope.places = data;
-			}
-		);
-
-	};
-
-	$scope.userLogin = function (user) {
-		$http.get ("/usermenu?login=" + user)
-			.success (function(data, status, headers, config) {
-			}
-		);
-	};			
-}]);
 
 adaythere.controller( "twitterQueryCtrl", ["$scope", "$http", function($scope, $http) {
 	this.query_data = null;
