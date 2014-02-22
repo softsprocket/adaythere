@@ -14,6 +14,8 @@ from app.lib.components.sidebar import SidebarHeaderView
 from app.lib.components.sidebar import MapSearchView
 from app.lib.components.sidebar import PlacesSearchView
 from app.lib.components.sidebar import MarkersView
+from app.lib.components.sidebar import CreateADayView
+from app.lib.components.sidebar import FindADayView
 import app.places
 import app.login
 import app.profile
@@ -24,7 +26,7 @@ import logging
 import json
 import inspect
 from app.lib.db.user import User
-from app.lib.components.genmodal import Modal, ProfileModal, MarkerModal
+from app.lib.components.genmodal import Modal, ProfileModal, MarkerModal, SelectDayModal
 from app.lib.components.element import Elements
 
 class MainHandler(webapp2.RequestHandler):
@@ -97,9 +99,12 @@ class MainHandler(webapp2.RequestHandler):
         mapSearchView = MapSearchView(logged_in);
         placesSearchView = PlacesSearchView(logged_in);
         markersView = MarkersView(logged_in);
+        createADayView = CreateADayView(logged_in);
+        findADayView = FindADayView(logged_in);
 
         profileModal = ProfileModal()
         markerModal = MarkerModal()
+        selectDayModal = SelectDayModal()
 
         adaythere.open_element("section", {"id":"sidebar_section", "ng-controller":"sidebarCtrl"})\
             .open_element("header", {"id":"sidebar_heading"})\
@@ -121,8 +126,10 @@ class MainHandler(webapp2.RequestHandler):
             .close_element("accordion")\
             .close_element("tab")\
             .open_element("tab", {"heading":"Create A Day"})\
+            .append_to_element(createADayView.get())\
             .close_element("tab")\
             .open_element("tab", {"heading":"Find A Day"})\
+            .append_to_element(findADayView.get())\
             .close_element("tab")\
             .close_element("tabset")\
             .open_element("div", {"ng-controller":"profileCtrl"})\
@@ -130,6 +137,9 @@ class MainHandler(webapp2.RequestHandler):
             .close_element("div")\
             .open_element("div")\
             .append_to_element(markerModal.get())\
+            .close_element("div")\
+            .open_element("div")\
+            .append_to_element(selectDayModal.get())\
             .close_element("div")\
             .close_element("section")
 

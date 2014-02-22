@@ -68,18 +68,45 @@ class MarkerModal(Modal):
 
         super(MarkerModal, self).__init__("markerModalContent.html")
         markerModalHeader = Elements()
-        markerModalHeader.append_to_element("<h3>{{ marker_title }}</h3>")
+        markerModalHeader.append_to_element("""
+            <label for="title">Name</name> 
+            <input id="title" class="form-control" type='text' ng-model='marker_content.name'></input>
+        """)
         self.add_header_content(markerModalHeader)
         markerModalBody = Elements()
         markerModalBody.append_to_element("""
-            <div>{{ types }}</div>
-            <div>{{ vicinity }}</div>
+            <label for="address">Address</label>
+            <input id="address" class="form-control" type='text' ng-model='marker_content.vicinity'></input>
+            <label for="own_comments">Comments</label>
+            <textarea id="own_comments"  class="form-control" ng-model='marker_content.comments'></textarea>
         """)
         self.add_body_content(markerModalBody)
         markerModalFooter = Elements()
         markerModalFooter.append_to_element("""
-            <button class="btn btn-primary" ng-click="ok()">OK</button>
-            <button class="btn btn-warning" ng-click="cancel()">Cancel</button>""")
+            <button ng-show="show_add_button" class="btn btn-primary" ng-click="marker_modal_add_to_day(marker_content)">Add To Day</button>
+            <button class="btn btn-primary" ng-click="marker_modal_ok()">OK</button>
+            <button class="btn btn-warning" ng-click="marker_modal_cancel()">Cancel</button>""")
         self.add_footer_content(markerModalFooter)
+
+class SelectDayModal(Modal):
+
+    def __init__(self):
+
+        super(SelectDayModal, self).__init__("selectDayModalContent.html")
+        modalHeader = Elements()
+        modalHeader.append_to_element("""
+            <h3>Select Day</h3>
+        """)
+        self.add_header_content(modalHeader)
+        modalBody = Elements()
+        modalBody.append_to_element("""
+
+        """)
+        self.add_body_content(modalBody)
+        modalFooter = Elements()
+        modalFooter.append_to_element("""
+            <button class="btn btn-primary" ng-click="selectday_modal_ok()">OK</button>
+            <button class="btn btn-warning" ng-click="selectday_modal_cancel()">Cancel</button>""")
+        self.add_footer_content(modalFooter)
 
 
