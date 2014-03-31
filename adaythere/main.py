@@ -19,6 +19,7 @@ from app.lib.components.sidebar import FindADayView
 import app.places
 import app.login
 import app.profile
+import app.admin
 from webapp2_extras import i18n
 import os
 from app.lib.google.maps import Maps
@@ -26,7 +27,7 @@ import logging
 import json
 import inspect
 from app.lib.db.user import User
-from app.lib.components.genmodal import Modal, ProfileModal, MarkerModal, SelectDayModal
+from app.lib.components.genmodal import Modal, ProfileModal, MarkerModal, SelectDayModal, AdminProfileModal
 from app.lib.components.element import Elements
 
 class MainHandler(webapp2.RequestHandler):
@@ -79,10 +80,16 @@ class MainHandler(webapp2.RequestHandler):
             logging.info("user federated_provider: " + str(user.federated_provider()));
             logging.info("user auth_domain: " + str(user.auth_domain()));
 
-            db_user = User.create_user_record_from_google_user(user)
-            navView = LoggedInNavView(db_user)
-            logged_in = True
+            db_user = User.record_from_google_user(user)
 
+            if db_user.banned:
+                navView = LoggedOutNavView()
+            else:
+                navView = LoggedInNavView(db_user)
+                logged_in = True
+
+        
+        adminProfileModal = AdminProfileModal()
 
         adaythere.open_element("header", {"id":"page_header"})\
             .open_element("h1", {"id":"page_heading"}, "A Day There")\
@@ -90,17 +97,20 @@ class MainHandler(webapp2.RequestHandler):
             .open_element("nav")\
             .append_to_element(navView.get())\
             .close_element("nav")\
+            .open_element("div")\
+            .append_to_element(adminProfileModal.get())\
+            .close_element("div")\
             .close_element("header")
 
         adaythere.open_element("section", {"id":"map_section"})\
             .close_element("section")
 
-        sidebarHeaderView = SidebarHeaderView();
-        mapSearchView = MapSearchView(logged_in);
-        placesSearchView = PlacesSearchView(logged_in);
-        markersView = MarkersView(logged_in);
-        createADayView = CreateADayView(logged_in);
-        findADayView = FindADayView(logged_in);
+        sidebarHeaderView = SidebarHeaderView()
+        mapSearchView = MapSearchView(logged_in)
+        placesSearchView = PlacesSearchView(logged_in)
+        markersView = MarkersView(logged_in)
+        createADayView = CreateADayView(logged_in)
+        findADayView = FindADayView(logged_in)
 
         profileModal = ProfileModal()
         markerModal = MarkerModal()
@@ -113,7 +123,7 @@ class MainHandler(webapp2.RequestHandler):
             .append_to_element("<hr></hr>")\
             .open_element("tabset", {"justified":"true"})\
             .open_element("tab", {"heading":"Map Tools"})\
-            .open_element("accordion", {"close-others":"false"})\
+            .open_element("accordion", {"close-others":"true"})\
             .open_element("accordion-group",{"heading":"Location"})\
             .append_to_element(mapSearchView.get())\
             .close_element("accordion-group")\
@@ -128,7 +138,7 @@ class MainHandler(webapp2.RequestHandler):
             .open_element("tab", {"heading":"Create A Day"})\
             .append_to_element(createADayView.get())\
             .close_element("tab")\
-            .open_element("tab", {"heading":"Find A Day"})\
+            .open_element("tab", {"active":"find_a_day.active", "heading":"Find A Day"})\
             .append_to_element(findADayView.get())\
             .close_element("tab")\
             .close_element("tabset")\
@@ -156,5 +166,6 @@ app = webapp2.WSGIApplication([
     ('/places', app.places.PlacesHandler),
     ('/login', app.login.LoginHandler),
     ('/logout', app.login.LogoutHandler),
-    ('/profile', app.profile.ProfileHandler)
+    ('/profile', app.profile.ProfileHandler),
+    ('/admin_profiles', app.admin.ProfilesHandler)
 ], debug=True)

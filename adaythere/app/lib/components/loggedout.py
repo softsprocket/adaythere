@@ -10,7 +10,7 @@ class LoggedOutNavView:
         <ul class="page-header-nav">
             <li class="dropdown" ng-controller="loginCtrl" style="list-style:none">
                 <a href class="dropdown-toggle">
-                    login
+                    Login
                 </a>
                 <ul class="dropdown-menu adt-nav-menu-button">
                         <a ng-click="googlelogin()">Google Login</a>

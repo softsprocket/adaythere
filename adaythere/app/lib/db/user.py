@@ -7,6 +7,7 @@ from app.lib.db.location import Location
 import logging
 import datetime
 
+
 class User(ndb.Model):
     user_id = ndb.StringProperty()
     name = ndb.StringProperty()
@@ -15,6 +16,7 @@ class User(ndb.Model):
     location = ndb.StructuredProperty(Location)
     contributed_adaythere_ids = ndb.IntegerProperty(repeated=True)
     date_joined = ndb.DateTimeProperty()
+    banned = ndb.BooleanProperty()
 
     @classmethod
     def query_name(cls, name):
@@ -32,7 +34,7 @@ class User(ndb.Model):
 
 
     @classmethod
-    def create_user_record_from_google_user(cls, google_user):
+    def record_from_google_user(cls, google_user):
 
         stored_user = cls.query_user_id(str(google_user.user_id()))
 
@@ -44,9 +46,10 @@ class User(ndb.Model):
             stored_user.auth_domain = google_user.auth_domain()
              
             stored_user.date_joined = datetime.datetime.utcnow()
-            
+            stored_user.banned = False;        
             logging.info("putting " + stored_user.user_id)
             stored_user.put()
 
         return stored_user
+
 

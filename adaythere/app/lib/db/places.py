@@ -3,31 +3,29 @@
 """
 
 from google.appengine.ext import ndb
-from app.lib.db.location import Location
+
+class Location(ndb.Model):
+    latitude = ndb.StringProperty()
+    longitude = ndb.StringProperty()
 
 class Place(ndb.Model):
-    placeId = ndb.StringProperty()
-    name = ndb.StringProperty()
     location = ndb.StructuredProperty(Location)
-    formattedAddress = ndb.StringProperty()
-    classification = ndb.IntegerProperty(repeated=True)
+    name = ndb.StringProperty()
+    vicinity = ndb.StringProperty()
+    comment = ndb.StringProperty()
+    
+class Day(ndb.Model):
+    userid = ndb.StringProperty()
+    locality = ndb.StringProperty()
+    title = ndb.StringProperty()
+    keywords = ndb.StringProperty(repeated=True)
+    description = ndb.StringProperty()
+    places = ndb.StructuredProperty(Place, repeated=True)
     numberOfReviews = ndb.IntegerProperty()
     averageReview = ndb.IntegerProperty()
 
     @classmethod
-    def query_id(cls, placeId):
-        return cls.query(cls.placeId == placeId).get()
-
-
-class Adaythere(ndb.Model):
-    adaythereId = ndb.StringProperty()
-    userId = ndb.IntegerProperty()
-    rating = ndb.IntegerProperty()
-    places = ndb.IntegerProperty(repeated=True)
-    description = ndb.TextProperty()
-
-    @classmethod
-    def query_id(cls, adaythereId):
-        return cls.query(cls.adaythereId == adaythereId).get()
+    def query_user(cls, userid):
+        return cls.query(cls.userid == userid)
 
 

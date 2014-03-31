@@ -35,7 +35,7 @@ class ProfileHandler(webapp2.RequestHandler):
         db_user = app.lib.db.user.User.query_user_id(str(user.user_id()))
 
         if db_user is None:
-            db_user = app.lib.db.user.User.create_user_record_from_google_user(user)
+            db_user = app.lib.db.user.User.record_from_google_user(user)
 
         location = json.loads(self.request.body)
         logging.info(location)

@@ -69,16 +69,17 @@ class MarkerModal(Modal):
         super(MarkerModal, self).__init__("markerModalContent.html")
         markerModalHeader = Elements()
         markerModalHeader.append_to_element("""
-            <label for="title">Name</name> 
-            <input id="title" class="form-control" type='text' ng-model='marker_content.name'></input>
+            <h1>Marker</h1>
         """)
         self.add_header_content(markerModalHeader)
         markerModalBody = Elements()
         markerModalBody.append_to_element("""
-            <label for="address">Address</label>
-            <input id="address" class="form-control" type='text' ng-model='marker_content.vicinity'></input>
-            <label for="own_comments">Comments</label>
-            <textarea id="own_comments"  class="form-control" ng-model='marker_content.comments'></textarea>
+            <label for="marker_modal_title">Name</label> 
+            <input id="marker_modal_title" class="form-control" type='text' ng-disabled="marker_content.not_editable" ng-model='marker_content.name'></input>
+            <label for="marker_modal_address">Address</label>
+            <input id="marker_modal_address" class="form-control" type='text' ng-disabled="marker_content.not_editable" ng-model='marker_content.vicinity'></input>
+            <label for="marker_modal_own_comments">Comments</label>
+            <textarea id="marker_modal_own_comments"  class="form-control" ng-disabled="marker_content.not_editable" ng-model='marker_content.comments'></textarea>
         """)
         self.add_body_content(markerModalBody)
         markerModalFooter = Elements()
@@ -107,6 +108,44 @@ class SelectDayModal(Modal):
         modalFooter.append_to_element("""
             <button class="btn btn-primary" ng-click="selectday_modal_ok()">OK</button>
             <button class="btn btn-warning" ng-click="selectday_modal_cancel()">Cancel</button>""")
+        self.add_footer_content(modalFooter)
+
+class AdminProfileModal(Modal):
+
+    def __init__(self):
+
+        super(AdminProfileModal, self).__init__("adminProfileModalContent.html")
+        modalHeader = Elements()
+        modalHeader.append_to_element("""
+            <h3>Profiles</h3>
+        """)
+        self.add_header_content(modalHeader)
+        modalBody = Elements()
+        modalBody.append_to_element("""
+        <label for="name">Name: </label>
+        <input id="name" class="form-control" type='text' ng-model='search_on.name'></input>
+        <label for="email">Email: </label>
+        <input id="email" class="form-control" type='text' ng-model='search_on.email'></input>        
+        <label for="userid">UserId: </label>
+        <input id="userid" class="form-control" type='text' ng-model='search_on.userid'></input>
+        """)
+        self.add_body_content(modalBody)
+        modalFooter = Elements()
+        modalFooter.append_to_element("""
+        <button class="btn btn-primary" ng-click="adminprofile_modal_ok()">Search</button>
+        <button class="btn btn-warning" ng-click="adminprofile_modal_cancel()">Close</button>
+        <div>----------------------------------------------------------------</div>
+        <div ng-repeat="user in received_profile_data.users">
+            <ul>
+                <li ng-repeat="(key, value) in user">{{ key }} : {{ value }}</li>
+            </ul>
+            <button ng-disabled="!user.banned" ng-click="adminprofile_modal_ban(user, false)">Unban</button>
+            <button ng-disabled="user.banned" ng-click="adminprofile_modal_ban(user, true)">Ban</button>
+            <div>----------------------------------------------------------------</div>
+        </div>
+        <div ng-if="received_profile_data.more">More</div>
+        """)
+
         self.add_footer_content(modalFooter)
 
 
