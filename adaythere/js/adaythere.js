@@ -1,10 +1,7 @@
-function ADT_set_element_positions (width, height) {
-
-	var map_width = Math.floor(width * 0.7);
-	var sidebar_width = Math.floor(width * 0.3); 
-	$("#map_section").width (map_width);
-	$("#sidebar_section").width (sidebar_width); 
-}
+var ADT_Constants = {
+	MINIMUM_WINDOW_WIDTH:  900,
+	DEFAULT_MAP_ZOOM: 12
+};
 
 function ADT_set_section_height (height) {
 	var h1 = $("#page_header").height();
@@ -247,7 +244,14 @@ ADT_CreatedDay.prototype.show_markers = function (scope, map) {
 	var markerBounds = new google.maps.LatLngBounds();
 
 	var add_listener = function (marker, place) {
+	
+		var timer = null;
 		google.maps.event.addListener (marker, "click", function () {
+			if (timer) {
+				clearTimeout (timer);
+				timer = null;
+
+			}
 			scope.open_marker_modal (place, false, false);
 		});
 
@@ -256,9 +260,17 @@ ADT_CreatedDay.prototype.show_markers = function (scope, map) {
 		});
 
 		google.maps.event.addListener(place.marker, 'mouseover', function() {
-			infowindow.open(map, place.marker);
+			timer = setTimeout (function () {
+				infowindow.open(map, place.marker);
+			}, 1000);
 		});
 
+		google.maps.event.addListener(place.marker, 'mouseout', function() {
+			if (timer) {
+				clearTimeout (timer);
+				timer = null;
+			}
+		});
 	};
 
 	for (var each in this.places) {
@@ -434,7 +446,6 @@ ADT_GoogleMapService.prototype.initialize = function (scope) {
 	this.geoloc.geolocate ().fail (function (err_msg) {
 		console.error (err_msg);
 	}).always (function () {
-		var zoom = 12;
 
 		var styles = [{
 			featureType: "poi",
@@ -446,7 +457,7 @@ ADT_GoogleMapService.prototype.initialize = function (scope) {
 
 		var mapOptions = {
 			center: new google.maps.LatLng(self.geoloc.location.latitude, self.geoloc.location.longitude),
-			zoom: zoom,
+			zoom: ADT_Constants.DEFAULT_MAP_ZOOM,
 			mapTypeId: google.maps.MapTypeId.ROADMAP,
 			styles: styles
 		};
@@ -1001,7 +1012,97 @@ adaythere.ProfileModalInstanceCtrl = function ($scope, $modalInstance, profile_b
 	};
 };
 
+function ADT_SidebarDisplayControl () {
+	this.map_width = "70%";
+	this.section_width = "30%"
+	this.display_state = $("#sidebar_section").is(":visible") ? "Hide Tools" : "Show Tools";
+	this.scope = null;
+	this.mapService = null;
+	this.current_zoom = ADT_Constants.DEFAULT_MAP_ZOOM;
+}
 
+ADT_SidebarDisplayControl.prototype.toggle_sidebar = function () {
+	var visible = $("#sidebar_section").is(":visible");
+	
+	this.show_sidebar (!visible);
+}
+
+ADT_SidebarDisplayControl.prototype.set_scope = function (scope) {
+	this.scope = scope;
+}
+
+ADT_SidebarDisplayControl.prototype.set_map = function (map) {
+
+	if (!map) {
+		console.log ("map not init");
+	}
+        this.mapService = map;
+}
+
+ADT_SidebarDisplayControl.prototype.show_sidebar = function (display) {
+
+	var map = this.mapService.get ();
+
+	if (map && $("#map_section").is(":visible")) {
+		this.current_zoom = map.getZoom ();
+	}
+
+	if (display == false) {
+		$("#map_section").css ("width", "100%");
+		$("#map_section").show ();
+		$("#sidebar_section").hide ();
+
+	} else {
+		if (this.at_minimum ()) {
+			$("#sidebar_section").css ("width", "100%");
+			$("#map_section").hide ();
+			$("#sidebar_section").show ();
+		} else {
+			$("#sidebar_section").css ("width", this.section_width);
+			$("#map_section").css ("width", this.map_width);
+			$("#sidebar_section").show ();
+			$("#map_section").show ();
+		}
+
+	}
+
+	if (this.scope) {
+		var phase = this.scope.$root.$$phase;
+		if(phase == '$apply' || phase == '$digest') {
+			this.scope.sidebar_display.menu_text = $("#sidebar_section").is(":visible") ? "Hide Tools" : "Show Tools";
+		} else {
+			var self = this;
+			this.scope.$apply (function () {
+				self.scope.sidebar_display.menu_text = $("#sidebar_section").is(":visible") ? "Hide Tools" : "Show Tools";
+			});
+		}
+	} 
+
+	if (map) {
+		map.setZoom (this.current_zoom);
+	}
+}
+
+ADT_SidebarDisplayControl.prototype.at_minimum = function () {
+        var width = $(window).width();
+
+	return width < ADT_Constants.MINIMUM_WINDOW_WIDTH;
+}
+
+var ADT_SidebarDisplayControlInstance = new ADT_SidebarDisplayControl ();
+
+adaythere.controller ("sidebarDisplayCtrl", ["$scope", "googleMapService", function ($scope, googleMapService) {
+
+	ADT_SidebarDisplayControlInstance.set_scope ($scope);
+	ADT_SidebarDisplayControlInstance.set_map (googleMapService);
+	$scope.sidebar_display = {};
+	$scope.sidebar_display.menu_text = ADT_SidebarDisplayControlInstance.display_state;
+
+
+	$scope.toggle_sidebar = function () {
+		ADT_SidebarDisplayControlInstance.toggle_sidebar ();
+	};
+}]);
 
 adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "googleMapService", "profileService", "userDaysService", function (
 			$scope, $modal, $http, googleMapService, profileService, userDaysService) {
@@ -1386,7 +1487,6 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "googleMapSer
 			var len = day.places.length;
 			var pos = 0;
 		
-			console.log (displayed_txt);	
 			$(button_name).val(displayed_txt);
 		}
 
@@ -1565,7 +1665,11 @@ $(window).resize (function () {
 	var width = $(window).width();
 	var height = $(window).height();
 
-//	ADT_set_element_positions (width, height);
+	if (width < 900) {
+		ADT_SidebarDisplayControlInstance.show_sidebar (false);
+	} else {
+		ADT_SidebarDisplayControlInstance.show_sidebar (true);
+	}
 
 	ADT_set_section_height (height);
 })
@@ -1575,9 +1679,12 @@ $(function () {
 
 	var width = $(window).width();
 	var height = $(window).height();
-	
+
+	if (width < 900) {
+		ADT_SidebarDisplayControlInstance.show_sidebar (false);
+	}
+
 	ADT_set_section_height (height);
-//	ADT_set_element_positions (width, height);
 
 });
 

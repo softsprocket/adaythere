@@ -17,6 +17,11 @@ class LoggedInNavView:
                         <a ng-click="admin_profiles()">profiles</a>
                     </ul>
                 </li>
+            <li id="sidebar_display_menu_item" ng-controller="sidebarDisplayCtrl" style="list-style:none; position:absolute; right:10px; top:5px">
+                <a href ng-click="toggle_sidebar ()">
+                    {{ sidebar_display.menu_text }}
+                </a>
+            </li>
             """
 
         self.html = """

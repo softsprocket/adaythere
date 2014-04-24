@@ -169,8 +169,6 @@ class FindADayView:
                 </li>
                 """)\
                 .close_element("accordion-group")\
-                .open_element("accordion-group", {"heading":"Other Days"})\
-                .close_element("accordion-group")\
                 .close_element("accordion")
 
             self.html = element.get()

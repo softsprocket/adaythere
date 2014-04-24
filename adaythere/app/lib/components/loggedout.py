@@ -16,6 +16,11 @@ class LoggedOutNavView:
                         <a ng-click="googlelogin()">Google Login</a>
                 </ul>
             </li>
+            <li ng-controller="sidebarDisplayCtrl" style="list-style:none; position:absolute; right:10px; top:5px">
+                <a href ng-click="toggle_sidebar ()">
+                    {{ sidebar_display.menu_text }}
+                </a>
+            </li>
         </ul>
         """
 

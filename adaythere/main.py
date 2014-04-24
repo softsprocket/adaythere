@@ -121,7 +121,7 @@ class MainHandler(webapp2.RequestHandler):
             .append_to_element(sidebarHeaderView.get())\
             .close_element("header")\
             .append_to_element("<hr></hr>")\
-            .open_element("tabset", {"justified":"true"})\
+            .open_element("tabset", {"justified":"false"})\
             .open_element("tab", {"heading":"Map Tools"})\
             .open_element("accordion", {"close-others":"true"})\
             .open_element("accordion-group",{"heading":"Location"})\
