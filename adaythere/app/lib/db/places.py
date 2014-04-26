@@ -29,3 +29,7 @@ class Day(ndb.Model):
         return cls.query(cls.userid == userid)
 
 
+    @classmethod
+    def query_user_title(cls, userid, title):
+        return cls.query(cls.userid == userid, cls.title == title)
+

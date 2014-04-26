@@ -311,7 +311,6 @@ ADT_CreatedDay.copy = function (created_day) {
 	day.locality = created_day.locality;
 
 	day.is_editable = created_day.is_editable;
-	day.has_been_modified = created_day.has_been_modified;
 	day.is_collapsed = created_day.is_collapsed;
 
 	for (var index in created_day.places) {
@@ -717,6 +716,7 @@ function ADT_UserDaysService ($http, $q) {
 	this.$q = $q;
 	
 	this.user_days = [];
+	this.deleted_days = [];
 }
 
 ADT_UserDaysService.prototype.getDays = function () {
@@ -730,7 +730,6 @@ ADT_UserDaysService.prototype.getDays = function () {
 			for (var each in data) {
 				var day = JSON.parse (data[each]);
 				day.is_editable = false;
-				day.has_been_modified = false;
 				day.is_collapsed = true;
 
 				self.user_days.push (ADT_CreatedDay.copy (day));
@@ -751,14 +750,13 @@ ADT_UserDaysService.prototype.addDay = function (created_day) {
 	var day = ADT_CreatedDay.copy (created_day);
 	
 	var self = this;
-	this.$http.put("/places", day.to_json ()).success (function (data, status, headers, config) {
+	this.$http.put ("/places", day.to_json ()).success (function (data, status, headers, config) {
 		day.is_collapsed = false;
 		for (var index in self.user_days) {
 			self.user_days[index].is_collapsed = true;
 		}
 
 		day.is_editable = false;
-		day.has_been_modified = false;
 		
 		self.user_days.push (day);
 
@@ -766,6 +764,45 @@ ADT_UserDaysService.prototype.addDay = function (created_day) {
 		console.error (status, data);
 	});
 }
+
+ADT_UserDaysService.prototype.updateDay = function (updated_day) {
+	var day = ADT_CreatedDay.copy (updated_day);
+
+	var self = this;
+	this.$http.post ("/places", day.to_json ()).success (function (data, status, headers, config) {
+	
+	}).error (function (data, status, headers, config) {
+		console.error (status, data);
+	});
+
+};
+
+ADT_UserDaysService.prototype.deleteDay = function (deleted_day) {
+	var day = ADT_CreatedDay.copy (deleted_day);
+	var self = this;
+	this.$http.delete ("/places", { params: { title: day.title }}).success (function (data, status, headers, config) {
+
+		for (i in self.user_days) {
+			self.deleted_days.push (deleted_day);
+
+			if (self.user_days[i] == deleted_day) {
+				self.user_days.splice (i, 1);
+			}
+		}	
+	}).error (function (data, status, headers, config) {
+		console.error (status, data);
+	});
+
+};
+
+ADT_UserDaysService.prototype.removeDeletedDay = function (deleted_day) {
+	for (i in this.deleted_days) {
+		if (this.deleted_days[i] == deleted_day) {
+			this.deleted_days.splice (i, 1);
+		}
+	}
+
+};
 
 adaythere.factory ("userDaysService", ["$http", "$q", function ($http, $q) {
 	return new ADT_UserDaysService ($http, $q);
@@ -1110,6 +1147,7 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "googleMapSer
 	$scope.clicked = googleMapService.clicked;
 
 	$scope.my_days = userDaysService.user_days;
+	$scope.my_deleted_days = userDaysService.deleted_days;
 
 	googleMapService.initialize ($scope).then (function (geoloc) {
 		googleMapService.clicked = geoloc.location;
@@ -1241,10 +1279,10 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "googleMapSer
 	};
 
 
-	$scope.open_marker_modal = function (obj, show_add_button, editable) {
+	$scope.open_marker_modal = function (obj, show_add_button, arg) {
 		$scope.marker_content = obj;
-		$scope.marker_content.is_editable = editable;
-		
+		$scope.marker_content.is_editable = (typeof arg.is_editable != "undefined") ? arg.is_editable : arg;
+
 		var modalInstance = $modal.open({
 			templateUrl: 'markerModalContent.html',
 		    	controller: adaythere.MarkerModalInstanceCtrl,
@@ -1442,6 +1480,29 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "googleMapSer
 		}
 	};
 
+	$scope.my_deleted_days_expand = function () {
+		var is_collapsed = $("#my_deleted_days_expander").val() == "Collapse All";
+		if (is_collapsed) {
+			for (var each in $scope.my_deleted_days) {
+				$scope.my_deleted_days[each].is_collapsed = true;
+			}
+			$("#my_deleted_days_expander").val("Expand All");
+			$scope.my_deleted_days_is_expanded = false;
+		} else {
+
+			for (var each in $scope.my_deleted_days) {
+				$scope.my_deleted_days[each].is_collapsed = false;
+			}
+			$("#my_deleted_days_expander").val("Collapse All");
+			$scope.my_deleted_days_is_expanded = true;
+		}
+	};
+
+	$scope.restore_day = function (day) {
+		userDaysService.addDay (day);
+		userDaysService.removeDeletedDay (day);
+	};
+
 	$scope.route_buttons = [];
 
 	var route_displayed = false;
@@ -1569,9 +1630,6 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "googleMapSer
 		return day.is_editable;
 	};
 
-	$scope.day_has_been_modified = function (day) {
-		return day.has_been_modified;
-	};
 
 	$scope.backup_copy_of_day = {};
 	$scope.set_day_editable = function (day) {
@@ -1587,12 +1645,22 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "googleMapSer
 
 	$scope.cancel_changes_to_day = function (day) {
 		day.is_editable = false;
-		day.has_been_modified = false;
 		day.keywords = $scope.backup_copy_of_day[day.title].keywords;
 		day.description = $scope.backup_copy_of_day[day.title].description;
 		day.places = $scope.backup_copy_of_day[day.title].places;
 	};
 
+
+	$scope.save_modified_day = function (day) {
+		userDaysService.updateDay (day);
+		day.is_editable = false;
+	};
+
+	$scope.delete_day = function (day) {
+		console.log (day);
+
+		userDaysService.deleteDay (day);
+	};
 }]);
 
 adaythere.MarkerModalInstanceCtrl = function ($scope, $modalInstance, marker_content, show_add_button, map) {

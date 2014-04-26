@@ -75,11 +75,11 @@ class MarkerModal(Modal):
         markerModalBody = Elements()
         markerModalBody.append_to_element("""
             <label for="marker_modal_title">Name</label> 
-            <input id="marker_modal_title" class="form-control" type='text' ng-disabled="marker_content.not_editable" ng-model='marker_content.name'></input>
+            <input id="marker_modal_title" class="form-control" type='text' ng-disabled="!marker_content.is_editable" ng-model='marker_content.name'></input>
             <label for="marker_modal_address">Address</label>
-            <input id="marker_modal_address" class="form-control" type='text' ng-disabled="marker_content.not_editable" ng-model='marker_content.vicinity'></input>
+            <input id="marker_modal_address" class="form-control" type='text' ng-disabled="!marker_content.is_editable" ng-model='marker_content.vicinity'></input>
             <label for="marker_modal_own_comments">Comments</label>
-            <textarea id="marker_modal_own_comments"  class="form-control" ng-disabled="marker_content.not_editable" ng-model='marker_content.comments'></textarea>
+            <textarea id="marker_modal_own_comments"  class="form-control" ng-disabled="!marker_content.is_editable" ng-model='marker_content.comments'></textarea>
         """)
         self.add_body_content(markerModalBody)
         markerModalFooter = Elements()
