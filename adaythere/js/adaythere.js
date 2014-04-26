@@ -467,7 +467,7 @@ ADT_GoogleMapService.prototype.initialize = function (scope) {
 		self.placesService = new google.maps.places.PlacesService(self.map);
 
 		var input = document.getElementById ("pac_input");
-		var div = document.getElementById ("search_util");
+		var div = document.getElementById ("location_search_util");
 
 		self.autocomplete = new google.maps.places.Autocomplete(input);
 		self.autocomplete.bindTo("bounds", self.map);
@@ -897,7 +897,7 @@ ADT_BoundingCircle.prototype.addClickListener = function (listener) {
 	this.clickListener = listener;
 }
 
-adaythere.controller ("loginCtrl", ["$scope", "$http", function ($scope, $http) {
+adaythere.controller ("loginCtrl", ["$scope", "$http", "$modal", function ($scope, $http, $modal) {
 
 	$scope.googlelogin = function () {
 		$http.get ("/login?method=google")
@@ -914,9 +914,6 @@ adaythere.controller ("loginCtrl", ["$scope", "$http", function ($scope, $http) 
 			}
 		);
 	};
-}]);
-
-adaythere.controller ("adminCtrl", ["$scope", "$http", "$modal", function ($scope, $http, $modal) {
 
 	$scope.received_profile_data = [];
 

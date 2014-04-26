@@ -100,6 +100,13 @@ class MainHandler(webapp2.RequestHandler):
             .open_element("div")\
             .append_to_element(adminProfileModal.get())\
             .close_element("div")\
+            .append_to_element("""
+                <li id="sidebar_display_menu_item" ng-controller="sidebarDisplayCtrl" style="list-style:none; position:absolute; right:10px; top:5px">
+                    <a href ng-click="toggle_sidebar ()">
+                    {{ sidebar_display.menu_text }}
+                    </a>
+                </li>
+            """)\
             .close_element("header")
 
         adaythere.open_element("section", {"id":"map_section"})\
