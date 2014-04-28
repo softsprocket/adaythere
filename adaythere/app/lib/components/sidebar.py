@@ -56,8 +56,8 @@ class MapSearchView:
 
         if logged_in:
             self.html = """
-            <div id="search_util">
-                <input id="pac_input" type="text"></input>
+            <div id="location_search_util">
+                <input id="autocomplete_google_input" type="text"></input>
                 <button type="button" ng-click="centre_map_at()">Go</button>
                 <button type="button" ng-click="set_marker_at_place(location)">Add Marker</button>
                 <h3>{{ location.address }}</h3>

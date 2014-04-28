@@ -466,7 +466,7 @@ ADT_GoogleMapService.prototype.initialize = function (scope) {
 		self.map.setOptions({styles: styles});
 		self.placesService = new google.maps.places.PlacesService(self.map);
 
-		var input = document.getElementById ("pac_input");
+		var input = document.getElementById ("autocomplete_google_input");
 		var div = document.getElementById ("location_search_util");
 
 		self.autocomplete = new google.maps.places.Autocomplete(input);
@@ -1196,7 +1196,7 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "googleMapSer
         };
 
 	$scope.centre_map_at = function () {
-		var address = $("#pac_input").val ();
+		var address = $("#autocomplete_google_input").val ();
 		googleMapService.geocoder.geocode( { "address": address}, function(results, status) {
 			if (status == google.maps.GeocoderStatus.OK) {
 				var place = results[0];
@@ -1339,7 +1339,7 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "googleMapSer
 		}
 
 		if (!location.name) { 
-			place.name = $("#pac_input").val() == "" ? "unknown" : $("#pac_input").val();
+			place.name = $("#autocomplete_google_input").val() == "" ? "unknown" : $("#autocomplete_google_input").val();
 		} else {
 			place.name = location.name;
 		}
