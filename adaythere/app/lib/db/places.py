@@ -3,15 +3,12 @@
 """
 
 from google.appengine.ext import ndb
+from app.lib.db.location import Location
 
-class Location(ndb.Model):
-    latitude = ndb.StringProperty()
-    longitude = ndb.StringProperty()
 
 class Place(ndb.Model):
     location = ndb.StructuredProperty(Location)
     name = ndb.StringProperty()
-    vicinity = ndb.StringProperty()
     comment = ndb.StringProperty()
     
 class Day(ndb.Model):

@@ -4,11 +4,12 @@
 
 import webapp2
 import json
-import app.lib.db.user
+from app.lib.db.user import User
 import logging
 from google.appengine.api import users
 import inspect
 from app.lib.db.location import Location
+import datetime
 
 class ProfileHandler(webapp2.RequestHandler):
 
@@ -22,7 +23,7 @@ class ProfileHandler(webapp2.RequestHandler):
             self.response.write("No profile available")
         else:
             logging.info("Profile Getting :" + str(user.user_id()))
-            db_user = app.lib.db.user.User.query_user_id(str(user.user_id()))
+            db_user = User.query_user_id(str(user.user_id()))
             logging.info(str(db_user))
             res = self.__build_response(db_user)
             self.response.write(json.dumps(res))
@@ -32,10 +33,10 @@ class ProfileHandler(webapp2.RequestHandler):
 
         user = users.get_current_user()
 
-        db_user = app.lib.db.user.User.query_user_id(str(user.user_id()))
+        db_user = User.query_user_id(str(user.user_id()))
 
         if db_user is None:
-            db_user = app.lib.db.user.User.record_from_google_user(user)
+            db_user = User.record_from_google_user(user)
 
         location = json.loads(self.request.body)
         logging.info(location)
@@ -43,12 +44,37 @@ class ProfileHandler(webapp2.RequestHandler):
         db_location.latitude = str(location["location"]["latitude"])
         db_location.longitude = str(location["location"]["longitude"])
         db_location.locality = location["location"]["locality"]
-        db_location.address = location["location"]["address"]
+        db_location.vicinity = location["location"]["vicinity"]
         db_user.location = db_location
         db_user.put()
         
         res = self.__build_response(db_user)
         self.response.write(json.dumps(res))
+
+
+
+    def put(self):
+
+        user = users.get_current_user()
+
+        if user is None:
+            self.response.status = 401
+            return
+
+        db_user = User.query_user_id(str(user.user_id()))
+        if db_user is None or db_user.banned:
+            self.response.status = 401
+            return
+    
+        operation = self.request.get("operation")
+
+        if operation == 'add_tool_access':
+            if db_user.has_tool_access is not None and db_user.has_tool_access:
+                return
+
+            db_user.has_tool_access = True
+            db_user.date_agreed_to_tool_access = datetime.datetime.utcnow()
+            db_user.put()
 
 
     def __build_response(self, db_user):
@@ -66,7 +92,7 @@ class ProfileHandler(webapp2.RequestHandler):
                 res["location"]["latitude"] = db_user.location.latitude
                 res["location"]["longitude"] = db_user.location.longitude
                 res["location"]["locality"] = db_user.location.locality
-                res["location"]["address"] = db_user.location.address
+                res["location"]["vicinity"] = db_user.location.vicinity
 
         return res
 

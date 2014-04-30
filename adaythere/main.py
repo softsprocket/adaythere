@@ -67,6 +67,7 @@ class MainHandler(webapp2.RequestHandler):
             { "src":"js/adaythere.js" }
         ])
 
+        db_user = None
         navView = None
         logged_in = False
         if user is None:
@@ -80,7 +81,10 @@ class MainHandler(webapp2.RequestHandler):
             logging.info("user federated_provider: " + str(user.federated_provider()));
             logging.info("user auth_domain: " + str(user.auth_domain()));
 
-            db_user = User.record_from_google_user(user)
+            db_user = User.query_user_id(str(user.user_id()))
+
+            if db_user is None:
+                db_user = User.record_from_google_user(user)
 
             if db_user.banned:
                 navView = LoggedOutNavView()
@@ -91,6 +95,15 @@ class MainHandler(webapp2.RequestHandler):
         
         adminProfileModal = AdminProfileModal()
 
+            
+        sidebar_display = """
+                <li id="sidebar_display_menu_item" ng-controller="sidebarDisplayCtrl" style="list-style:none; position:absolute; right:10px; top:5px">
+                    <a href ng-show="sidebar_link.map_is_displayed" ng-click="toggle_sidebar ()">
+                    {{ sidebar_display.menu_text }}
+                    </a>
+                </li>
+        """
+
         adaythere.open_element("header", {"id":"page_header"})\
             .open_element("h1", {"id":"page_heading"}, "A Day There")\
             .close_element("h1")\
@@ -100,16 +113,44 @@ class MainHandler(webapp2.RequestHandler):
             .open_element("div")\
             .append_to_element(adminProfileModal.get())\
             .close_element("div")\
-            .append_to_element("""
-                <li id="sidebar_display_menu_item" ng-controller="sidebarDisplayCtrl" style="list-style:none; position:absolute; right:10px; top:5px">
-                    <a href ng-click="toggle_sidebar ()">
-                    {{ sidebar_display.menu_text }}
-                    </a>
-                </li>
-            """)\
+            .append_to_element(sidebar_display)\
             .close_element("header")
 
-        adaythere.open_element("section", {"id":"map_section"})\
+        adaythere.open_element("section", { "id":"welcome_to_left", "ng-controller":"welcome_controller"})\
+            .append_to_element("""
+                    <button type="button" ng-click="open_welcome_doors()" style="position:absolute;right:0">Click</button>
+                """)\
+            .close_element("section")
+                
+        adaythere.open_element("section", { "id":"welcome_to_right", "ng-controller":"welcome_controller" })\
+            .append_to_element("""
+                    <button type="button" ng-click="open_welcome_doors()" style="position:absolute;left:0">Me</button>
+                """)\
+            .close_element("section")
+
+        adaythere.open_element("section", { "id":"find_a_day", "ng-controller":"find_a_day_controller" })\
+            .append_to_element("""
+                    <button type=button ng-click="become_a_contributor()" style="position:absolute;bottom:0">Get Access To Tools</button>
+                """)\
+            .close_element("section")
+
+        adaythere.append_to_element(Map.map_elements().get())
+
+        adaythere.open_element("footer", {"id":"page_footer"})\
+            .open_element("p", None, "&copy; 2014 SoftSprocket")\
+            .close_element("p")\
+            .close_element("footer")
+
+
+        self.response.write(adaythere.get())
+
+class Map(webapp2.RequestHandler):
+
+    @classmethod
+    def map_elements (cls):
+        logged_in = True
+        element = Elements ()
+        element.open_element("section", {"id":"map_section"})\
             .close_element("section")
 
         sidebarHeaderView = SidebarHeaderView()
@@ -123,7 +164,7 @@ class MainHandler(webapp2.RequestHandler):
         markerModal = MarkerModal()
         selectDayModal = SelectDayModal()
 
-        adaythere.open_element("section", {"id":"sidebar_section", "ng-controller":"sidebarCtrl"})\
+        element.open_element("section", {"id":"sidebar_section", "ng-controller":"sidebarCtrl"})\
             .open_element("header", {"id":"sidebar_heading"})\
             .append_to_element(sidebarHeaderView.get())\
             .close_element("header")\
@@ -159,14 +200,9 @@ class MainHandler(webapp2.RequestHandler):
             .append_to_element(selectDayModal.get())\
             .close_element("div")\
             .close_element("section")
-
-        adaythere.open_element("footer", {"id":"page_footer"})\
-            .open_element("p", None, "&copy; 2014 SoftSprocket")\
-            .close_element("p")\
-            .close_element("footer")
+        return element
 
 
-        self.response.write(adaythere.get())
 
 app = webapp2.WSGIApplication([
     ('/', MainHandler),
@@ -176,3 +212,4 @@ app = webapp2.WSGIApplication([
     ('/profile', app.profile.ProfileHandler),
     ('/admin_profiles', app.admin.ProfilesHandler)
 ], debug=True)
+

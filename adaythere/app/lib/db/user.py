@@ -17,6 +17,8 @@ class User(ndb.Model):
     contributed_adaythere_ids = ndb.IntegerProperty(repeated=True)
     date_joined = ndb.DateTimeProperty()
     banned = ndb.BooleanProperty()
+    has_tool_access = ndb.BooleanProperty()
+    date_agreed_to_tool_access = ndb.DateTimeProperty()
 
     @classmethod
     def query_name(cls, name):
@@ -46,7 +48,9 @@ class User(ndb.Model):
             stored_user.auth_domain = google_user.auth_domain()
              
             stored_user.date_joined = datetime.datetime.utcnow()
-            stored_user.banned = False;        
+            stored_user.banned = False;     
+            stored_user.has_tool_access = False;
+
             logging.info("putting " + stored_user.user_id)
             stored_user.put()
 

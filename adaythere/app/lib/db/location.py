@@ -7,4 +7,4 @@ class Location(ndb.Model):
     latitude = ndb.StringProperty()
     longitude = ndb.StringProperty()
     locality = ndb.StringProperty()
-    address  = ndb.StringProperty()
+    vicinity  = ndb.StringProperty()

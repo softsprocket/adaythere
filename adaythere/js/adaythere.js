@@ -9,6 +9,9 @@ function ADT_set_section_height (height) {
 	var val = height - (h1 + h2);
 	$("#map_section").height(val);
 	$("#sidebar_section").height(val);
+	$("#welcome_to_left").height(val);
+	$("#welcome_to_right").height(val);
+	$("#find_a_day").height(val);	
 }
 
 function ADT_shallow_copy (obj) {
@@ -157,6 +160,22 @@ function ADT_CreatedDay () {
 	this.markers_visible = false;
 }
 
+ADT_CreatedDay.prototype.is_cleared =function () {
+	return this.title == "" &&  this.keywords == ""
+		&& this.description == "" && this.places.length == 0;
+};
+
+ADT_CreatedDay.prototype.clear = function () {
+	this.title = "";
+	this.description = "";
+	this.keywords = "";
+	for (var index in this.places) {
+		this.places[index].marker.setMap (null);
+	}
+
+	this.places = [];
+};
+
 ADT_CreatedDay.prototype.top_places_list = function (place) {
 	return this.places[0].equals (place);
 };
@@ -168,12 +187,12 @@ ADT_CreatedDay.prototype.bottom_places_list = function (place) {
 ADT_CreatedDay.prototype.swap_with_next = function (index) {
 	var removed = this.places.splice (index, 1);
 	this.places.splice (parseInt(index) + 1, 0, removed[0]);
-}
+};
 
 ADT_CreatedDay.prototype.swap_with_prev = function (index) {
 	var removed = this.places.splice (index, 1);
 	this.places.splice (parseInt(index) - 1, 0, removed[0]);
-}
+};
 
 ADT_CreatedDay.prototype.remove = function (place) {
 	var tmp_places = [];
@@ -319,7 +338,8 @@ ADT_CreatedDay.copy = function (created_day) {
 		place.comment = created_day.places[index].comment;
 		place.location.latitude = created_day.places[index].location.latitude;
 		place.location.longitude = created_day.places[index].location.longitude;
-		place.vicinity = created_day.places[index].vicinity;
+
+		place.vicinity =  created_day.places[index].location.vicinity ? created_day.places[index].location.vicinity : created_day.places[index].vicinity;
 
 		day.places.push (place);
 	}
@@ -704,6 +724,23 @@ ADT_ProfileService.prototype.setUserLocation = function (location) {
 
 }
 
+ADT_ProfileService.prototype.add_tool_access = function () {
+	var deferred = this.$q.defer ();
+	var self = this;
+
+	this.$http({
+		method: "PUT",
+		url: "/profile?operation=add_tool_access"
+	}).success (function (data, status, headers, config) {
+		deferred.resolve (true)
+	}).error (function (data, status, headers, config) {
+		console.error (status, data);
+		deferred.resolve (false);
+	});
+
+	return deferred.promise;
+}
+
 adaythere.factory ("profileService", ["$http", "$q", function ($http, $q) {
 	return new ADT_ProfileService ($http, $q);
 }]);
@@ -783,10 +820,11 @@ ADT_UserDaysService.prototype.deleteDay = function (deleted_day) {
 	this.$http.delete ("/places", { params: { title: day.title }}).success (function (data, status, headers, config) {
 
 		for (i in self.user_days) {
-			self.deleted_days.push (deleted_day);
 
 			if (self.user_days[i] == deleted_day) {
 				self.user_days.splice (i, 1);
+				self.deleted_days.push (deleted_day);
+				break;
 			}
 		}	
 	}).error (function (data, status, headers, config) {
@@ -1053,6 +1091,7 @@ function ADT_SidebarDisplayControl () {
 	this.scope = null;
 	this.mapService = null;
 	this.current_zoom = ADT_Constants.DEFAULT_MAP_ZOOM;
+	this.display_control = !$("#find_a_day").is(":visible");
 }
 
 ADT_SidebarDisplayControl.prototype.toggle_sidebar = function () {
@@ -1126,6 +1165,15 @@ ADT_SidebarDisplayControl.prototype.at_minimum = function () {
 var ADT_SidebarDisplayControlInstance = new ADT_SidebarDisplayControl ();
 
 adaythere.controller ("sidebarDisplayCtrl", ["$scope", "googleMapService", function ($scope, googleMapService) {
+	$scope.sidebar_link = {};
+	$scope.sidebar_link.map_is_displayed = ADT_SidebarDisplayControlInstance.display_control;
+
+	$scope.$watch (function () {
+		return ADT_SidebarDisplayControlInstance.display_control;
+	}, function (val) {
+		console.log ("display_control", val);
+		$scope.sidebar_link.map_is_displayed = val;
+	});
 
 	ADT_SidebarDisplayControlInstance.set_scope ($scope);
 	ADT_SidebarDisplayControlInstance.set_map (googleMapService);
@@ -1277,8 +1325,9 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "googleMapSer
 
 
 	$scope.open_marker_modal = function (obj, show_add_button, arg) {
+		console.log ("obj", obj);
 		$scope.marker_content = obj;
-		$scope.marker_content.is_editable = (typeof arg.is_editable != "undefined") ? arg.is_editable : arg;
+		$scope.marker_content.is_editable = (typeof arg != 'undefined' &&  typeof arg.is_editable != "undefined") ? arg.is_editable : arg;
 
 		var modalInstance = $modal.open({
 			templateUrl: 'markerModalContent.html',
@@ -1597,18 +1646,12 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "googleMapSer
 	};
 
 	$scope.creation_clear = function () {
-		$scope.current_created_day.title = "";
-		$scope.current_created_day.description = "";
-		$scope.current_created_day.keywords = "";
-		$scope. creation_alerts = [];
-		for (var index in $scope.current_created_day.places) {
-			$scope.current_created_day.places[index].marker.setMap (null);
-		}
-
-		$scope.current_created_day.places = [];
+		$scope.current_created_day.clear ();
+		$scope.creation_alerts = [];
 	};
 
 	$scope.edit_saved_day = function (day) {
+
 		$scope.current_created_day = day;
 		for (var index in $scope.current_created_day.places) {
 			$scope.current_created_day.places[index].marker.setMap (googleMapService.get ());
@@ -1629,22 +1672,43 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "googleMapSer
 
 
 	$scope.backup_copy_of_day = {};
-	$scope.set_day_editable = function (day) {
+	$scope.set_day_editable = function (day, index) {
+
+		if (!$scope.current_created_day.is_cleared()) {
+			var rv = window.confirm("Overwrite current unsaved day?");
+			if (rv) {
+				$scope.current_created_day.clear ();
+			} else {
+				return;
+			}
+		}
+
 		$scope.backup_copy_of_day[day.title] = ADT_shallow_copy (day);
 		$scope.backup_copy_of_day[day.title].places = [];
 
 		for (var each in day.places) {
 			$scope.backup_copy_of_day[day.title].places[each] = ADT_shallow_copy (day.places[each]);
 		}
+		
+		$scope.display_day_view(day, index);
 
 		day.is_editable = true;
+		$scope.current_created_day = day;
+		$("#creation_save_button").attr("disabled", true);
+		$("#creation_clear_button").attr("disabled", true);
 	};
 
 	$scope.cancel_changes_to_day = function (day) {
+		for (var each in day.places) {
+			$scope.hide_all_markers (each);
+		}
+
 		day.is_editable = false;
 		day.keywords = $scope.backup_copy_of_day[day.title].keywords;
 		day.description = $scope.backup_copy_of_day[day.title].description;
 		day.places = $scope.backup_copy_of_day[day.title].places;
+		
+		$scope.current_created_day = new ADT_CreatedDay ();
 	};
 
 
@@ -1653,10 +1717,55 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "googleMapSer
 		day.is_editable = false;
 	};
 
-	$scope.delete_day = function (day) {
-		console.log (day);
+	$scope.copy_day_as = function (day) {
+		var rv = window.prompt ("Choose a new title", day.title);
+		var new_title = ADT_string_trim (rv);
 
-		userDaysService.deleteDay (day);
+		for (i in $scope.my_days) {
+			if ($scope.my_days[i].title == new_title) {
+				window.alert ("You are already using " + new_title);
+				return;
+			}
+		}
+
+		new_day = ADT_shallow_copy (day);
+		new_day.places = [];
+
+		for (var each in day.places) {
+			new_day.places[each] = ADT_shallow_copy (day.places[each]);
+		}
+		
+		new_day.title = new_title;
+
+		userDaysService.addDay (new_day);
+	};
+
+	$scope.delete_day = function (day) {
+		var rv = window.confirm("Delete day " + day.title + "?");
+
+		if (rv) {
+			userDaysService.deleteDay (day);
+		}
+	};
+}]);
+
+adaythere.controller ("welcome_controller", ["$scope", function ($scope) {
+
+	$scope.open_welcome_doors = function () {
+		$("#welcome_to_left").hide ("slow");
+		$("#welcome_to_right").hide ("slow");
+	};
+}]);
+
+adaythere.controller ("find_a_day_controller", ["$scope", "$compile", "$http", "profileService", function ($scope, $compile, $http, profileService) {
+
+	$scope.become_a_contributor = function () {
+		profileService.add_tool_access ().then (function (result) {
+			if (result) {
+				ADT_SidebarDisplayControlInstance.display_control = true;
+				$("#find_a_day").slideUp ("slow");
+			}
+		});
 	};
 }]);
 
@@ -1702,7 +1811,7 @@ adaythere.MarkerModalInstanceCtrl = function ($scope, $modalInstance, marker_con
 		});
 
 		google.maps.event.addListener(place.marker, 'mouseover', function() {
-			infowindow.open(map, place.marker);
+			//infowindow.open(map, place.marker);
 		});
 
 		$modalInstance.close(place);

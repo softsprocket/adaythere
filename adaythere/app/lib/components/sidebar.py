@@ -60,8 +60,8 @@ class MapSearchView:
                 <input id="autocomplete_google_input" type="text"></input>
                 <button type="button" ng-click="centre_map_at()">Go</button>
                 <button type="button" ng-click="set_marker_at_place(location)">Add Marker</button>
-                <h3>{{ location.address }}</h3>
-                <h4>{{ location.latitude }} {{ location.longitude }}</h4>
+                <h3>{{ location.vicinity }}</h3>
+                <h4>{{ location.latitude }} Lat. {{ location.longitude }} Lon.</h4>
                 <button type="button" ng-click="make_default_location()">Set As Default</button>
             </div>
             """
@@ -118,8 +118,8 @@ class CreateADayView:
                         </li>
                         </div>
                 </fieldset>
-                <button type="button" ng-click="creation_save()">Save</button>
-                <button type="button" ng-click="creation_clear()">Clear</button>
+                <button id="creation_save_button" type="button" ng-click="creation_save()">Save</button>
+                <button id="creation_clear_button" type="button" ng-click="creation_clear()">Clear</button>
             </fieldset>
             """
         else:
@@ -159,8 +159,9 @@ class FindADayView:
                                     </div>
                                 </div>
                             </fieldset>
-                            <button type="button" ng-disabled="day_is_editable(day)" ng-click="set_day_editable(day)">Edit</button>
+                            <button type="button" ng-disabled="day_is_editable(day)" ng-click="set_day_editable(day, $index)">Edit</button>
                             <button type="button" ng-disabled="!day_is_editable(day)" ng-click="save_modified_day(day)">Save</button>
+                            <button type="button" ng-disabled="day_is_editable(day)" ng-click="copy_day_as(day)">Copy As</button>
                             <button type="button" ng-disabled="!day_is_editable(day)" ng-click="cancel_changes_to_day(day)">Cancel</button>
                             <input id="display_day_view_button_{{ $index }}" type="button" ng-click="display_day_view(day, $index)" value="Display"></input>
                             <select ng-model="direction_mode[$index]" ng-options="mode for mode in direction_modes">

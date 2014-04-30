@@ -24,7 +24,7 @@ class PlacesHandler(webapp2.RequestHandler):
 
         #print(self.request.body)
         data = json.loads(self.request.body)
-        #print(data)
+        print(data)
 
         day = Day()
         day.userid = db_user.user_id
@@ -46,7 +46,7 @@ class PlacesHandler(webapp2.RequestHandler):
             p.location = Location()
             p.location.latitude = str(place['location']['latitude'])
             p.location.longitude = str(place['location']['longitude'])
-            p.vicinity = place['vicinity']
+            p.location.vicinity = place['vicinity']
             day.places.append(p)
 
         day.put()
@@ -66,6 +66,9 @@ class PlacesHandler(webapp2.RequestHandler):
 
         days = []
         data = Day.query_user(db_user.user_id).fetch()
+
+        print data
+
         for each in data:
             days.append(json.dumps(each.to_dict()))
             
@@ -102,7 +105,7 @@ class PlacesHandler(webapp2.RequestHandler):
             p.location = Location()
             p.location.latitude = str(place['location']['latitude'])
             p.location.longitude = str(place['location']['longitude'])
-            p.vicinity = place['vicinity']
+            p.location.vicinity = place['vicinity']
             day.places.append(p)
 
         day.put ()
