@@ -116,10 +116,19 @@ class CreateADayView:
                             <button type="button" ng-disabled="top_places_list(place)" ng-click="creation_moveup(place)">Up</button>
                             <button type="button" ng-disabled="bottom_places_list(place)" ng-click="creation_movedown(place)">Down</button>
                         </li>
-                        </div>
+                    </div>
+                </fieldset>
+                <fieldset>
+                    <legend>Photos</legend>
+                    <div style="padding:4px; border: 1px solid #C0C0C0;-moz-border-radius: 4px;-webkit-border-radius: 4px;">
+                        <li id:"creation_photo_list" ng-repeat="photo in current_created_day.photos">
+                            <a ng-click="open_photo_modal(photo)">{{photo.title}}</a>
+                        </li>
+                    </div>
                 </fieldset>
                 <button id="creation_save_button" type="button" ng-click="creation_save()">Save</button>
                 <button id="creation_clear_button" type="button" ng-click="creation_clear()">Clear</button>
+                <button id="creation_photo_button" type="button" ng-click="open_add_photo_modal()">Add photos</button>
             </fieldset>
             """
         else:
@@ -157,6 +166,14 @@ class FindADayView:
                                         <button type="button" ng-show="($index == (day.places.length - 1))  && show_route_buttons($parent.$index)" 
                                             ng-click="display_route(day, $parent.$index)">Route</button>
                                     </div>
+                                </div>
+                            </fieldset>
+                            <fieldset>
+                                <legend>Photos</legend>
+                                <div style="padding:4px; border: 1px solid #C0C0C0;-moz-border-radius: 4px;-webkit-border-radius: 4px;">
+                                    <li id:"creation_photo_list" ng-repeat="photo in day.photos">
+                                        <a ng-click="open_photo_modal(photo)">{{photo.title}}</a>
+                                    </li>
                                 </div>
                             </fieldset>
                             <button type="button" ng-disabled="day_is_editable(day)" ng-click="set_day_editable(day, $index)">Edit</button>

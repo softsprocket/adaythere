@@ -156,13 +156,14 @@ function ADT_CreatedDay () {
 	this.keywords = "";
 	this.description = "";
 	this.places = [];
+	this.photos = [];
 
 	this.markers_visible = false;
 }
 
 ADT_CreatedDay.prototype.is_cleared =function () {
 	return this.title == "" &&  this.keywords == ""
-		&& this.description == "" && this.places.length == 0;
+		&& this.description == "" && this.places.length == 0 && this.photos.length = 0;
 };
 
 ADT_CreatedDay.prototype.clear = function () {
@@ -174,6 +175,7 @@ ADT_CreatedDay.prototype.clear = function () {
 	}
 
 	this.places = [];
+	this.photos = [];
 };
 
 ADT_CreatedDay.prototype.top_places_list = function (place) {
@@ -1650,6 +1652,24 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "googleMapSer
 		$scope.creation_alerts = [];
 	};
 
+	$scope.open_add_photo_modal = function () {
+		console.log ("open photo modal");
+
+		var modalInstance = $modal.open({
+			templateUrl: 'addPhotosModalContent.html',
+		    controller: adaythere.AddPhotosModalInstanceCtrl,
+		    resolve: {
+		    },
+		    scope: $scope
+		});
+
+		modalInstance.result.then(function (marker_content) {
+
+		}, function () {
+			console.log ('Modal dismissed at: ' + new Date());
+		});
+	};
+
 	$scope.edit_saved_day = function (day) {
 
 		$scope.current_created_day = day;
@@ -1696,6 +1716,7 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "googleMapSer
 		$scope.current_created_day = day;
 		$("#creation_save_button").attr("disabled", true);
 		$("#creation_clear_button").attr("disabled", true);
+		$("#creation_photo_button").attr("disabled", true);
 	};
 
 	$scope.cancel_changes_to_day = function (day) {
@@ -1768,6 +1789,35 @@ adaythere.controller ("find_a_day_controller", ["$scope", "$compile", "$http", "
 		});
 	};
 }]);
+
+adaythere.AddPhotosModalInstanceCtrl = function ($scope) {
+	$scope.uploaded_file = { name: "" };
+
+	
+	$scope.file_uploader_change = function (evt) {
+		var files = evt.target.files;
+		console.log (files);
+
+		for (i in files) {
+			var file = files[i];
+			console.log (file.name);
+			console.log (file.type);
+			console.log (file.size);
+
+			var img = $("#pic_loader_div").append (
+				$("<img></img>")
+					.attr ("src", window.URL.createObjectURL(file))
+			);
+		}
+	};
+
+	$("#photo_file_uploader").change ($scope.file_uploader_change);
+	console.log ($("#photo_file_uploader"));
+
+	$scope.print_filename = function () {
+		console.log ($scope.uploaded_file.name);
+	};
+};
 
 adaythere.MarkerModalInstanceCtrl = function ($scope, $modalInstance, marker_content, show_add_button, map) {
 	$scope.show_add_button = show_add_button;

@@ -20,6 +20,7 @@ import app.places
 import app.login
 import app.profile
 import app.admin
+import app.photos
 from webapp2_extras import i18n
 import os
 from app.lib.google.maps import Maps
@@ -27,7 +28,7 @@ import logging
 import json
 import inspect
 from app.lib.db.user import User
-from app.lib.components.genmodal import Modal, ProfileModal, MarkerModal, SelectDayModal, AdminProfileModal
+from app.lib.components.genmodal import Modal, ProfileModal, MarkerModal, SelectDayModal, AdminProfileModal, AddPhotosModal
 from app.lib.components.element import Elements
 
 class MainHandler(webapp2.RequestHandler):
@@ -134,7 +135,7 @@ class MainHandler(webapp2.RequestHandler):
                 """)\
             .close_element("section")
 
-        adaythere.append_to_element(Map.map_elements().get())
+        adaythere.append_to_element(MapTools.map_elements().get())
 
         adaythere.open_element("footer", {"id":"page_footer"})\
             .open_element("p", None, "&copy; 2014 SoftSprocket")\
@@ -144,7 +145,7 @@ class MainHandler(webapp2.RequestHandler):
 
         self.response.write(adaythere.get())
 
-class Map(webapp2.RequestHandler):
+class MapTools():
 
     @classmethod
     def map_elements (cls):
@@ -163,6 +164,7 @@ class Map(webapp2.RequestHandler):
         profileModal = ProfileModal()
         markerModal = MarkerModal()
         selectDayModal = SelectDayModal()
+        addPhotosModal = AddPhotosModal()
 
         element.open_element("section", {"id":"sidebar_section", "ng-controller":"sidebarCtrl"})\
             .open_element("header", {"id":"sidebar_heading"})\
@@ -199,6 +201,9 @@ class Map(webapp2.RequestHandler):
             .open_element("div")\
             .append_to_element(selectDayModal.get())\
             .close_element("div")\
+            .open_element("div")\
+            .append_to_element(addPhotosModal.get())\
+            .close_element("div")\
             .close_element("section")
         return element
 
@@ -206,6 +211,7 @@ class Map(webapp2.RequestHandler):
 
 app = webapp2.WSGIApplication([
     ('/', MainHandler),
+    ('/photos', app.photos.PhotosHandler),
     ('/places', app.places.PlacesHandler),
     ('/login', app.login.LoginHandler),
     ('/logout', app.login.LogoutHandler),

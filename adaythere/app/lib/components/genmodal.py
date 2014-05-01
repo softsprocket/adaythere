@@ -149,3 +149,28 @@ class AdminProfileModal(Modal):
         self.add_footer_content(modalFooter)
 
 
+class AddPhotosModal(Modal):
+
+    def __init__(self):
+
+        super(AddPhotosModal, self).__init__("addPhotosModalContent.html")
+        modalHeader = Elements()
+        modalHeader.append_to_element("""
+            <h3>Photos</h3>
+        """)
+        self.add_header_content(modalHeader)
+
+        modalBody = Elements()
+        modalBody.append_to_element("""
+             <input id="photo_file_uploader" name="files[]" type="file" />
+             <div id="pic_loader_div"></div>
+        """)
+        self.add_body_content(modalBody)
+               
+        modalFooter = Elements()
+        modalFooter.append_to_element("""
+    
+        """)
+
+        self.add_footer_content(modalFooter)
+

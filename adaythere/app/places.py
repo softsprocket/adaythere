@@ -6,25 +6,19 @@ import webapp2
 import json
 from app.lib.db.places import Location, Place, Day
 import logging
-from google.appengine.api import users
 from app.lib.db.user import User
+from app.adaythere import ADayThere
 
 class PlacesHandler(webapp2.RequestHandler):
 
     def put(self):
 
-        user = users.get_current_user()
-        if user is None:
+        tool_user, db_user = ADayThere.tool_user()
+        if not tool_user:
             self.response.status = 401
             return
 
-        db_user = User.record_from_google_user(user)
-        if db_user.banned:
-            self.response.status = 401
-
-        #print(self.request.body)
         data = json.loads(self.request.body)
-        print(data)
 
         day = Day()
         day.userid = db_user.user_id
@@ -55,14 +49,10 @@ class PlacesHandler(webapp2.RequestHandler):
 
     def get(self):
 
-        user = users.get_current_user()
-        if user is None:
+        tool_user, db_user = ADayThere.tool_user()
+        if not tool_user:
             self.response.status = 401
             return
-                                                
-        db_user = User.record_from_google_user(user)
-        if db_user.banned:
-            self.response.status = 401
 
         days = []
         data = Day.query_user(db_user.user_id).fetch()
@@ -78,14 +68,10 @@ class PlacesHandler(webapp2.RequestHandler):
 
     def post(self):
 
-        user = users.get_current_user()
-        if user is None:
+        tool_user, db_user = ADayThere.tool_user()
+        if not tool_user:
             self.response.status = 401
             return
-
-        db_user = User.record_from_google_user(user)
-        if db_user.banned:
-            self.response.status = 401
 
         data = json.loads(self.request.body)
 
@@ -115,14 +101,10 @@ class PlacesHandler(webapp2.RequestHandler):
 
     def delete(self):
 
-        user = users.get_current_user()
-        if user is None:
+        tool_user, db_user = ADayThere.tool_user()
+        if not tool_user:
             self.response.status = 401
             return
-
-        db_user = User.record_from_google_user(user)
-        if db_user.banned:
-            self.response.status = 401
 
         title = self.request.get ('title');
         day = Day.query_user_title(db_user.user_id, title)

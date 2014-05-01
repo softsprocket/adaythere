@@ -6,10 +6,10 @@ import webapp2
 import json
 from app.lib.db.user import User
 import logging
-from google.appengine.api import users
 import inspect
 from app.lib.db.location import Location
 import datetime
+from app.adaythere import ADayThere
 
 class ProfileHandler(webapp2.RequestHandler):
 
@@ -17,26 +17,26 @@ class ProfileHandler(webapp2.RequestHandler):
         """
             Responds to a get request.
         """
-        user = users.get_current_user()
 
-        if user is None:
-            self.response.write("No profile available")
-        else:
-            logging.info("Profile Getting :" + str(user.user_id()))
-            db_user = User.query_user_id(str(user.user_id()))
-            logging.info(str(db_user))
-            res = self.__build_response(db_user)
-            self.response.write(json.dumps(res))
+        logged_in, user = ADayThere.logged_in_user()
+        if not logged_in:
+            self.response.status = 401
+            return
+
+        db_user = User.query_user_id(str(user.user_id()))
+        logging.info(str(db_user))
+        res = self.__build_response(db_user)
+        self.response.write(json.dumps(res))
 
 
     def post(self):
 
-        user = users.get_current_user()
-
+        logged_in, user = ADayThere.logged_in_user()
+        if not logged_in:
+            self.response.status = 401
+            return
+        
         db_user = User.query_user_id(str(user.user_id()))
-
-        if db_user is None:
-            db_user = User.record_from_google_user(user)
 
         location = json.loads(self.request.body)
         logging.info(location)
@@ -55,20 +55,15 @@ class ProfileHandler(webapp2.RequestHandler):
 
     def put(self):
 
-        user = users.get_current_user()
-
-        if user is None:
-            self.response.status = 401
-            return
-
-        db_user = User.query_user_id(str(user.user_id()))
-        if db_user is None or db_user.banned:
+        logged_in, user = ADayThere.logged_in_user()
+        if not logged_in:
             self.response.status = 401
             return
     
         operation = self.request.get("operation")
 
         if operation == 'add_tool_access':
+            db_user = User.query_user_id(str(user.user_id()))
             if db_user.has_tool_access is not None and db_user.has_tool_access:
                 return
 
