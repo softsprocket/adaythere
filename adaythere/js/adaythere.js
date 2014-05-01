@@ -162,8 +162,8 @@ function ADT_CreatedDay () {
 }
 
 ADT_CreatedDay.prototype.is_cleared =function () {
-	return this.title == "" &&  this.keywords == ""
-		&& this.description == "" && this.places.length == 0 && this.photos.length = 0;
+	return ((this.title == "")  &&  (this.keywords == "")
+		&& (this.description == "") && (this.places.length == 0) && (this.photos.length == 0));
 };
 
 ADT_CreatedDay.prototype.clear = function () {
