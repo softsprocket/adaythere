@@ -848,6 +848,62 @@ adaythere.factory ("userDaysService", ["$http", "$q", function ($http, $q) {
 	return new ADT_UserDaysService ($http, $q);
 }]);
 
+
+function ADT_PhotoService ($http, $q) {
+	this.$http = $http;
+	this.$q = $q;
+	
+	this.total_allowed_photos = 50;
+
+	this.user_photos = [];
+	this.deleted_photos = [];
+	this.current_count = 0;
+}
+
+ADT_PhotoService.prototype.getCurrentCount = function () {
+
+	var deferred = this.$q.defer ();
+	var self = this;
+
+	if (this.current_count > 0) {
+		deferred.resolve (this.current_count);
+	} else {
+		this.$http.get ("/photos?action=count").success (function (data, status, headers, config) {
+			deferred.resolve (data.count);
+
+		}).error (function (data, status, headers, config) {
+			console.error (status, data);
+			deferred.reject ();
+		});
+	}
+
+	return deferred.promise;
+};
+
+ADT_PhotoService.prototype.upload = function (photos) {
+
+	console.log (photos);
+
+	var deferred = this.$q.defer ();
+	var self = this;
+
+	this.$http.put ("/photos", JSON.stringify (photos)).success (function (data, status, headers, config) {
+		deferred.resolve (data.count);
+
+	}).error (function (data, status, headers, config) {
+		console.error (status, data);
+		deferred.reject ();
+	});
+
+
+        return deferred.promise;
+
+}
+
+adaythere.factory ("photoService", ["$http", "$q", function ($http, $q) {
+	return new ADT_PhotoService ($http, $q);
+}]);
+
 /*
  * adaythere controllers
  */
@@ -1173,7 +1229,6 @@ adaythere.controller ("sidebarDisplayCtrl", ["$scope", "googleMapService", funct
 	$scope.$watch (function () {
 		return ADT_SidebarDisplayControlInstance.display_control;
 	}, function (val) {
-		console.log ("display_control", val);
 		$scope.sidebar_link.map_is_displayed = val;
 	});
 
@@ -1188,8 +1243,10 @@ adaythere.controller ("sidebarDisplayCtrl", ["$scope", "googleMapService", funct
 	};
 }]);
 
-adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "googleMapService", "profileService", "userDaysService", function (
-			$scope, $modal, $http, googleMapService, profileService, userDaysService) {
+adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "$compile", 
+		"googleMapService", "profileService", "userDaysService", "photoService",
+		function ($scope, $modal, $http, $compile, googleMapService, profileService, userDaysService, photoService) {
+
 	$scope.location = googleMapService.location;
 	$scope.clicked = googleMapService.clicked;
 
@@ -1652,21 +1709,34 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "googleMapSer
 		$scope.creation_alerts = [];
 	};
 
+	$scope.photo_storage = {
+		count: 0,
+		total_allowed: photoService.total_allowed_photos,
+		available_files: []
+	};
+
 	$scope.open_add_photo_modal = function () {
-		console.log ("open photo modal");
+		var promise = photoService.getCurrentCount ();
+		promise.then (function (count) {
+			$scope.photo_storage.count = count;
+			$scope.total_allowed =  photoService.total_allowed_photos - count;
 
-		var modalInstance = $modal.open({
-			templateUrl: 'addPhotosModalContent.html',
-		    controller: adaythere.AddPhotosModalInstanceCtrl,
-		    resolve: {
-		    },
-		    scope: $scope
-		});
+			var modalInstance = $modal.open({
+				templateUrl: 'addPhotosModalContent.html',
+		    		controller: adaythere.AddPhotosModalInstanceCtrl,
+		    		resolve: {
+					available_count: photoService.total_allowed_photos - count
+		    		},
+		    		scope: $scope,
+			    	compile: $compile,
+			    	photoService: photoService
+			});
 
-		modalInstance.result.then(function (marker_content) {
+			modalInstance.result.then(function (marker_content) {
 
-		}, function () {
-			console.log ('Modal dismissed at: ' + new Date());
+			}, function () {
+				console.log ('Modal dismissed at: ' + new Date());
+			});
 		});
 	};
 
@@ -1778,7 +1848,7 @@ adaythere.controller ("welcome_controller", ["$scope", function ($scope) {
 	};
 }]);
 
-adaythere.controller ("find_a_day_controller", ["$scope", "$compile", "$http", "profileService", function ($scope, $compile, $http, profileService) {
+adaythere.controller ("find_a_day_controller", ["$scope", "$http", "profileService", function ($scope, $http, profileService) {
 
 	$scope.become_a_contributor = function () {
 		profileService.add_tool_access ().then (function (result) {
@@ -1790,33 +1860,124 @@ adaythere.controller ("find_a_day_controller", ["$scope", "$compile", "$http", "
 	};
 }]);
 
-adaythere.AddPhotosModalInstanceCtrl = function ($scope) {
-	$scope.uploaded_file = { name: "" };
+adaythere.AddPhotosModalInstanceCtrl = function ($scope, $compile, photoService, available_count) {
+	$scope.uploaded_files = [];
 
-	
-	$scope.file_uploader_change = function (evt) {
-		var files = evt.target.files;
-		console.log (files);
+	$scope.accepted_formats = [ "jpeg", "png", "svg", "bmp", "gif" ];
 
-		for (i in files) {
-			var file = files[i];
-			console.log (file.name);
-			console.log (file.type);
-			console.log (file.size);
+	var list = null;
 
-			var img = $("#pic_loader_div").append (
-				$("<img></img>")
-					.attr ("src", window.URL.createObjectURL(file))
-			);
+	$scope.file_selection = function (element) {
+		var files = element.files;
+
+		var length = files.length > available_count ? available_count : files.length;
+		var compiled_buttons = $compile(
+			"<input type=button ng-click='upload_checked_photos()' value='Upload Selected' />"
+			+ "<input type=button ng-click='remove_checked_photos()' value='Remove Selected' />"
+			+ "<input type=button ng-click='toggle_selection()' value='Toggle Selection' />"
+		)($scope);
+		
+		if (length > 0 && list == null) {
+			$("#pic_loader_div").append (compiled_buttons);
+
+			list = $("<ul></ul>");			
+			$("#pic_loader_div").append (list);
 		}
+
+
+		for (var i = 0; i < length; ++i) {
+			var file = files[i];
+			var name = file.name;
+
+			var url = window.URL.createObjectURL(file);
+			var img = new Image ();
+
+			img.onload = function (evt) {
+				var factor;
+
+				if (this.width > this.height) {
+					factor = 350 / this.naturalWidth;
+				} else {
+					factor = 350 / this.naturalHeight;
+				}
+
+				this.height = factor * this.naturalHeight;
+			        this.width = factor * this.naturalWidth;
+			};
+
+			img.src = url;
+			var item = $("<li></li");
+			item.append (img);
+			item.append (
+				'<input type="text" class="pic_loader_title" value="' + name.split (".")[0] + '" />'
+				+ '<input type="checkbox" class="pic_loader_action_checkbox" checked />'
+			);
+			list.append (item);
+		}
+
 	};
 
-	$("#photo_file_uploader").change ($scope.file_uploader_change);
-	console.log ($("#photo_file_uploader"));
+	$scope.upload_checked_photos = function () {
+		var items = $("#pic_loader_div").children ("ul").children ("li");
+		var selected_for_upload = [];
 
-	$scope.print_filename = function () {
-		console.log ($scope.uploaded_file.name);
+		for (var i = 0; i < items.length; ++i) {
+			var li = $(items[i]);
+			var checkbox = $(li.children ('.pic_loader_action_checkbox')[0]);
+			var title =  $(li.children ('.pic_loader_title')[0]).val ();
+			if (title == "") {
+				window.alert ("All photos must have a unique title");
+				return;
+			}
+
+			if (checkbox.is(':checked')) {
+				var img = $(li.children ('img')[0]).get (0);
+				var canvas = document.createElement("canvas");
+				canvas.width = img.width;
+				canvas.height = img.height;
+				var ctx = canvas.getContext("2d");
+				ctx.drawImage(img, 0, 0);
+				var storage_obj = {
+					url: canvas.toDataURL("image/*").replace("data:image/*;base64,", ""),
+					title: title
+				};
+
+				selected_for_upload.push (storage_obj);
+			}
+
+		}
+
+		photoService.upload (selected_for_upload).then (function (count) {
+			console.log (count);				
+		});
 	};
+
+	$scope.remove_checked_photos = function () {
+		var items = $("#pic_loader_div").children ("ul").children ("li");
+
+		for (var i = 0; i < items.length; ++i) {
+			var li = $(items[i]);
+			var checkbox = $(li.children ('.pic_loader_action_checkbox')[0]);
+			if (checkbox.is(':checked')) {
+				var img = $(li.children ('img')[0]);
+				li.remove ();
+			}
+
+		}
+
+	};
+
+	$scope.toggle_selection = function () {
+		
+		var items = $("#pic_loader_div").children ("ul").children ("li");
+
+		for (var i = 0; i < items.length; ++i) {
+			var li = $(items[i]);
+			var checkbox = $(li.children ('.pic_loader_action_checkbox')[0]);
+			checkbox.each (function () { this.checked = !this.checked; });
+		}
+	}	
+
 };
 
 adaythere.MarkerModalInstanceCtrl = function ($scope, $modalInstance, marker_content, show_add_button, map) {

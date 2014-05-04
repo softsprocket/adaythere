@@ -4,20 +4,15 @@ from google.appengine.ext import ndb
 
 class Photos(ndb.Model):
     user_id = ndb.StringProperty()
-    day_title = ndb.StringProperty()
-    photo_title = ndb.StringProperty()
-    photo = ndb.BlobProperty()
+    title = ndb.StringProperty()
+    photo = ndb.TextProperty()
     
     @classmethod
     def query_user_id(cls, user_id):
-        return cls.query(cls.user_id == user_id).get()
+        return cls.query(cls.user_id == user_id)
 
     @classmethod
-    def query_day(cls, user_id, day_title):
-        return cls.query(cls.user_id == user_id, cls.day_title == day_title)
-
-    @classmethod
-    def query_photo(cls, user_id, day_title, photo_title):
-        return cls.query(cls.user_id == user_id, cls.day_title == day_title, cls.photo_title == photo_title)
+    def query_photo(cls, user_id, photo_title):
+        return cls.query(cls.user_id == user_id, cls.title == photo_title)
 
 

@@ -162,14 +162,28 @@ class AddPhotosModal(Modal):
 
         modalBody = Elements()
         modalBody.append_to_element("""
-             <input id="photo_file_uploader" name="files[]" type="file" />
-             <div id="pic_loader_div"></div>
+
+             <legend>Loaded Pics</legend>
+             <div id="pic_loader_div" class= "fieldset_box">
+             <input type="file" ng-model-instant id="photo_file_uploader" multiple onchange="angular.element(this).scope().file_selection(this)"  accept="image/*" />
+             </div>
+
+             <legend>Saved Pics</legend>
+             <fieldset class="fieldset_box">
+             <div id="stored_pics_div" ng-repeat="stored_pic in photo_storage.available_files">
+                <ul>
+                    <li>{{ stored_pic }}</li>
+                </ul>
+             </div>
+             </fieldset>
         """)
         self.add_body_content(modalBody)
                
         modalFooter = Elements()
         modalFooter.append_to_element("""
-    
+            <div id="pic_loader_header_div" class="fieldset_box">
+                <p> {{ photo_storage.count }} photos stored<br/> {{ photo_storage.total_allowed }} remaining</p>
+            </div>
         """)
 
         self.add_footer_content(modalFooter)

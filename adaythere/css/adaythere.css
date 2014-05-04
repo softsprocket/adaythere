@@ -134,4 +134,10 @@ section#find_a_day {
 	background: grey;
 }
 
+.fieldset_box {
+	padding:4px; 
+	border: 1px solid #C0C0C0;
+	-moz-border-radius: 4px;
+	-webkit-border-radius: 4px;
+}
 

@@ -110,7 +110,7 @@ class CreateADayView:
                 <textarea id="creation_descrip"  class="form-control" ng-model='current_created_day.description'></textarea>
                 <fieldset>
                     <legend>Places</legend>
-                    <div style="padding:4px; border: 1px solid #C0C0C0;-moz-border-radius: 4px;-webkit-border-radius: 4px;">
+                    <div class="fieldset_box">
                         <li id:"creation_places_list" ng-repeat="place in current_created_day.places">
                             <a ng-click="open_marker_modal(place, false)">{{place.name}}</a>
                             <button type="button" ng-disabled="top_places_list(place)" ng-click="creation_moveup(place)">Up</button>
@@ -120,7 +120,7 @@ class CreateADayView:
                 </fieldset>
                 <fieldset>
                     <legend>Photos</legend>
-                    <div style="padding:4px; border: 1px solid #C0C0C0;-moz-border-radius: 4px;-webkit-border-radius: 4px;">
+                    <div class="fieldset_box">
                         <li id:"creation_photo_list" ng-repeat="photo in current_created_day.photos">
                             <a ng-click="open_photo_modal(photo)">{{photo.title}}</a>
                         </li>
@@ -160,7 +160,7 @@ class FindADayView:
                             <input id="day_description" class="form-control" type='text' ng-disabled="!day_is_editable(day)" ng-model='day.description'></input>
                             <fieldset>
                                 <legend>Places</legend>
-                                <div style="padding:4px; border: 1px solid #C0C0C0;-moz-border-radius: 4px;-webkit-border-radius: 4px;">
+                                <div class="fieldset_box">
                                     <div ng-repeat="place in day.places">
                                         <a ng-click="open_marker_modal(place, false, day)">{{place.name}}</a>
                                         <button type="button" ng-show="($index == (day.places.length - 1))  && show_route_buttons($parent.$index)" 
@@ -170,7 +170,7 @@ class FindADayView:
                             </fieldset>
                             <fieldset>
                                 <legend>Photos</legend>
-                                <div style="padding:4px; border: 1px solid #C0C0C0;-moz-border-radius: 4px;-webkit-border-radius: 4px;">
+                                <div class="fieldset_box">
                                     <li id:"creation_photo_list" ng-repeat="photo in day.photos">
                                         <a ng-click="open_photo_modal(photo)">{{photo.title}}</a>
                                     </li>
@@ -204,7 +204,7 @@ class FindADayView:
                                 <input id="deleted_day_description" class="form-control" type='text' ng-disabled="!day_is_editable(day)" ng-model='day.description'></input>
                                 <fieldset>
                                     <legend>Places</legend>
-                                    <div style="padding:4px; border: 1px solid #C0C0C0;-moz-border-radius: 4px;-webkit-border-radius: 4px;">
+                                    <div class="fieldset_box">
                                         <div ng-repeat="place in day.places">
                                             <a ng-click="open_marker_modal(place, false, day)">{{place.name}}</a>
                                             <button type="button" ng-show="($index == (day.places.length - 1))  && show_route_buttons($parent.$index)" 
