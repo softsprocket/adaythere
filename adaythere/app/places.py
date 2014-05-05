@@ -31,7 +31,9 @@ class PlacesHandler(webapp2.RequestHandler):
                 day.keywords = data['keywords'].split(',')
             else:
                 day.keywords = data['keywords'].split(' ')
-
+        else:
+            day.keywords = data['keywords']
+        
         day.places = []
         for place in data['places']:
             p = Place()
@@ -81,7 +83,13 @@ class PlacesHandler(webapp2.RequestHandler):
         day.title = data['title']
         day.description = data['description']
 
-        day.keywords = data['keywords']
+        if isinstance(data['keywords'], basestring):
+            if ',' in data['keywords']:
+                day.keywords = data['keywords'].split(',')
+            else:
+                day.keywords = data['keywords'].split(' ')
+        else:
+            day.keywords = data['keywords']
 
         day.places = []
         for place in data['places']:
