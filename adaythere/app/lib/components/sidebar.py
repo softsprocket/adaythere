@@ -122,7 +122,14 @@ class CreateADayView:
                     <legend>Photos</legend>
                     <div class="fieldset_box">
                         <li id:"creation_photo_list" ng-repeat="photo in current_created_day.photos">
-                            <a ng-click="open_photo_modal(photo)">{{photo.title}}</a>
+                            <a ng-init="collapsed=true" ng-click="collapsed=!collapsed">{{ photo.title }}</a>
+                            <div collapse="collapsed">
+                                <div class="well well-lg">
+                                    <img src= "/photos?action=img&title={{ photo.title }}"></img>
+                                    <legend>Description</legend><input type="text" class="form-control" ng-model="photo.description">
+                                </div> 
+                            </div>
+                                                                                    
                         </li>
                     </div>
                 </fieldset>
@@ -146,7 +153,7 @@ class FindADayView:
         if logged_in:
             element = Elements() 
             element.open_element("accordion", {"close-others":"true"})\
-                    .open_element("accordion-group",{"heading":"My Days", "is-open":"true"})\
+                    .open_element("accordion-group",{"heading":"Saved Days", "is-open":"true"})\
                 .append_to_element("""
                 <div class="ng-cloak" ng-show='my_days.length > 0'><input id="my_days_expander" type='button' value="Expand All" ng-click='my_days_expand()'></input></div>
                 <li ng-repeat="day in my_days">
@@ -172,7 +179,13 @@ class FindADayView:
                                 <legend>Photos</legend>
                                 <div class="fieldset_box">
                                     <li id:"creation_photo_list" ng-repeat="photo in day.photos">
-                                        <a ng-click="open_photo_modal(photo)">{{photo.title}}</a>
+                                        <a ng-init="collapsed=true" ng-click="collapsed=!collapsed">{{ photo.title }}</a>
+                                        <div collapse="collapsed">
+                                            <div class="well well-lg">
+                                                <img src= "/photos?action=img&title={{ photo.title }}"></img>
+                                                <legend>Description</legend><input type="text" class="form-control" ng-model="photo.description" ng-disabled="!day_is_editable(day)">    
+                                            </div> 
+                                        </div>
                                     </li>
                                 </div>
                             </fieldset>

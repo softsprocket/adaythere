@@ -79,7 +79,7 @@ class MarkerModal(Modal):
             <label for="marker_modal_address">Address</label>
             <input id="marker_modal_address" class="form-control" type='text' ng-disabled="!marker_content.is_editable" ng-model='marker_content.vicinity'></input>
             <label for="marker_modal_own_comments">Comments</label>
-            <textarea id="marker_modal_own_comments"  class="form-control" ng-disabled="!marker_content.is_editable" ng-model='marker_content.comments'></textarea>
+            <textarea id="marker_modal_own_comments"  class="form-control" ng-disabled="!marker_content.is_editable" ng-model='marker_content.comment'></textarea>
         """)
         self.add_body_content(markerModalBody)
         markerModalFooter = Elements()
@@ -162,27 +162,42 @@ class AddPhotosModal(Modal):
 
         modalBody = Elements()
         modalBody.append_to_element("""
-
-             <legend>Loaded Pics</legend>
-             <div id="pic_loader_div" class= "fieldset_box">
-             <input type="file" ng-model-instant id="photo_file_uploader" multiple onchange="angular.element(this).scope().file_selection(this)"  accept="image/*" />
+            <fieldset class="fieldset_box">
+            <input type="button" value="Load Files From Disk" ng-click="hide_pic_loader=!hide_pic_loader" class="btn btn-primary"/>
+            <div ng-init="hide_pic_loader=true" collapse="hide_pic_loader">
+             <legend>Pic Loader</legend>
+             <div id="pic_loader_div" class= "well well-lg">
+                <input type="file" ng-model-instant id="photo_file_uploader" multiple onchange="angular.element(this).scope().file_selection(this)"  accept="image/*" class="btn btn-warning" />
              </div>
-
+            </div>
+            </fieldset>
              <legend>Saved Pics</legend>
              <fieldset class="fieldset_box">
              <div id="stored_pics_div" ng-repeat="stored_pic in photo_storage.available_files">
                 <ul>
-                    <li>{{ stored_pic }}</li>
+                    <li>
+                        <a href ng-click="display_pic(stored_pic.title)">{{ stored_pic.title }}</a>
+                        <input type="checkbox" ng-model="confirmed" ng-change="stored_pics_selection_changed (stored_pic, confirmed)" 
+                            id="stored_pics_selection_checkbox"> <div ng-show="stored_pic.used_by.length!=0">Used by: {{ stored_pic.used_by }}</div>
+                        <div collapse="is_collapsed(stored_pic.title)">
+                                <div class="well well-lg" id="{{ stored_pic.title }}"></div> 
+                        </div>
+                    </li>
                 </ul>
              </div>
              </fieldset>
+             
         """)
         self.add_body_content(modalBody)
                
         modalFooter = Elements()
         modalFooter.append_to_element("""
-            <div id="pic_loader_header_div" class="fieldset_box">
-                <p> {{ photo_storage.count }} photos stored<br/> {{ photo_storage.total_allowed }} remaining</p>
+            <button class="btn btn-primary" ng-click="addphotos_modal_delete()">Delete Selected</button>
+            <button class="btn btn-primary" ng-click="addphotos_modal_add_to_day()">Add Selected To Day</button>
+            <button class="btn btn-warning" ng-click="addphotos_modal_close()">Close</button>
+            <div class="fieldset_box">
+                <image id="pic_loader_hidden_image" style="display:none"></image>
+                <p> {{ photo_storage.count }} photos stored<br/> {{ photo_storage.total_allowed }} allowed</p>
             </div>
         """)
 

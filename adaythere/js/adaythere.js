@@ -151,6 +151,11 @@ ADT_Place.from_marker_content = function (marker_content) {
 	return place;
 }
 
+function ADT_DayPhoto () {
+	this.title = ""
+	this.description = ""
+}
+
 function ADT_CreatedDay () {
 	this.title = "";
 	this.keywords = "";
@@ -161,9 +166,11 @@ function ADT_CreatedDay () {
 	this.markers_visible = false;
 }
 
-ADT_CreatedDay.prototype.is_cleared =function () {
+ADT_CreatedDay.prototype.is_cleared = function () {
+
 	return ((this.title == "")  &&  (this.keywords == "")
-		&& (this.description == "") && (this.places.length == 0) && (this.photos.length == 0));
+		&& (this.description == "") && (this.places.length == 0) 
+		&& (this.photos.length == 0));
 };
 
 ADT_CreatedDay.prototype.clear = function () {
@@ -247,7 +254,7 @@ ADT_CreatedDay.prototype.to_json = function () {
 	day.description = this.description;
 	day.locality = this.locality;
 
-	for (var index in this.places) {
+	for (var index = 0; index < this.places.length; ++index) {
 		var place = new ADT_Place ();
         	place.name = this.places[index].name;
 	        place.comment = this.places[index].comment;
@@ -258,8 +265,49 @@ ADT_CreatedDay.prototype.to_json = function () {
 		day.places.push (place);
 	}
 
+	for (var index = 0; index < this.photos.length; ++index) {
+		var photo = new ADT_DayPhoto ();
+		photo.description = this.photos[index].description;
+		photo.title = this.photos[index].title;
+		day.photos.push (photo);	
+	}
+
+
 	return JSON.stringify (day);	
 };
+
+ADT_CreatedDay.copy = function (created_day) {
+	var day = new ADT_CreatedDay ();
+
+	day.title = created_day.title;
+	day.keywords = created_day.keywords;
+	day.description = created_day.description;
+	day.locality = created_day.locality;
+
+	day.is_editable = created_day.is_editable;
+	day.is_collapsed = created_day.is_collapsed;
+
+	for (var index in created_day.places) {
+		var place = new ADT_Place ();
+		place.name = created_day.places[index].name;
+		place.comment = created_day.places[index].comment;
+		place.location.latitude = created_day.places[index].location.latitude;
+		place.location.longitude = created_day.places[index].location.longitude;
+
+		place.vicinity =  created_day.places[index].location.vicinity ? created_day.places[index].location.vicinity : created_day.places[index].vicinity;
+
+		day.places.push (place);
+	}
+
+	for (var index = 0; index < created_day.photos.length; ++index) {
+		var photo = new ADT_DayPhoto ();
+		photo.description = created_day.photos[index].description;
+		photo.title = created_day.photos[index].title;
+		day.photos.push (photo);	
+	}
+
+	return day;
+}
 
 ADT_CreatedDay.prototype.show_markers = function (scope, map) {
 	var markerBounds = new google.maps.LatLngBounds();
@@ -316,37 +364,13 @@ ADT_CreatedDay.prototype.show_markers = function (scope, map) {
 }
 
 ADT_CreatedDay.prototype.hide_markers = function () {
-	for (var each in this.places) {
-		this.places[each].marker.setMap (null);
+	for (var index = 0; index < this.places.length; ++index) {
+		if (this.places[index].marker) {
+			this.places[index].marker.setMap (null);
+		}
 	}
 
 	this.markers_visible = false;
-}
-
-ADT_CreatedDay.copy = function (created_day) {
-	var day = new ADT_CreatedDay ();
-
-	day.title = created_day.title;
-	day.keywords = created_day.keywords;
-	day.description = created_day.description;
-	day.locality = created_day.locality;
-
-	day.is_editable = created_day.is_editable;
-	day.is_collapsed = created_day.is_collapsed;
-
-	for (var index in created_day.places) {
-		var place = new ADT_Place ();
-		place.name = created_day.places[index].name;
-		place.comment = created_day.places[index].comment;
-		place.location.latitude = created_day.places[index].location.latitude;
-		place.location.longitude = created_day.places[index].location.longitude;
-
-		place.vicinity =  created_day.places[index].location.vicinity ? created_day.places[index].location.vicinity : created_day.places[index].vicinity;
-
-		day.places.push (place);
-	}
-
-	return day;
 }
 
 /*
@@ -536,10 +560,7 @@ ADT_GoogleMapService.prototype.initialize = function (scope) {
 
 			self.moved = true;
 
-
-			//scope.$apply (function () {
-				self.clicked = self.location;
-			//});
+			self.clicked = self.location;
 
 		});
 
@@ -854,10 +875,10 @@ function ADT_PhotoService ($http, $q) {
 	this.$q = $q;
 	
 	this.total_allowed_photos = 50;
-
-	this.user_photos = [];
-	this.deleted_photos = [];
 	this.current_count = 0;
+	this.title_list = []
+
+	this.getTitles ();
 }
 
 ADT_PhotoService.prototype.getCurrentCount = function () {
@@ -882,14 +903,20 @@ ADT_PhotoService.prototype.getCurrentCount = function () {
 
 ADT_PhotoService.prototype.upload = function (photos) {
 
-	console.log (photos);
-
 	var deferred = this.$q.defer ();
 	var self = this;
 
 	this.$http.put ("/photos", JSON.stringify (photos)).success (function (data, status, headers, config) {
-		deferred.resolve (data.count);
 
+		self.current_count += photos.length;
+
+		var len = photos.length;
+		
+		for (var i = 0; i < len; ++i) {
+			self.title_list.push (photos[i]);
+		}
+
+		deferred.resolve ();
 	}).error (function (data, status, headers, config) {
 		console.error (status, data);
 		deferred.reject ();
@@ -898,6 +925,32 @@ ADT_PhotoService.prototype.upload = function (photos) {
 
         return deferred.promise;
 
+}
+
+ADT_PhotoService.prototype.getTitles = function () {
+
+
+	var deferred = this.$q.defer ();
+	var self = this;
+
+	if (this.title_list.length > 0) {
+		deferred.resolve (this.title_list);
+	} else {
+		this.$http.get ("/photos?action=list").success (function (data, status, headers, config) {
+		
+			for (var i = 0; i < data.length; ++i) {
+				self.title_list.push (data[i]);
+			}
+			self.current_count = self.title_list.length;
+
+			deferred.resolve ();
+		}).error (function (data, status, headers, config) {
+			console.error (status, data);
+			deferred.reject ();
+		});
+	}
+
+	return deferred.promise;
 }
 
 adaythere.factory ("photoService", ["$http", "$q", function ($http, $q) {
@@ -1093,7 +1146,7 @@ adaythere.AdminProfileModalInstanceCtrl = function ($scope, $modalInstance, $htt
 
 adaythere.controller ("profileCtrl", ["$scope", "$modal", "profileService", function ($scope, $modal, profileService) {
 
-	$scope.profile_body_content = { "error":"no profile" };
+	$scope.profile_body_content = { "error": "no profile" };
 
 	$scope.profile = function () {
 
@@ -1384,8 +1437,8 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "$compile",
 
 
 	$scope.open_marker_modal = function (obj, show_add_button, arg) {
-		console.log ("obj", obj);
 		$scope.marker_content = obj;
+
 		$scope.marker_content.is_editable = (typeof arg != 'undefined' &&  typeof arg.is_editable != "undefined") ? arg.is_editable : arg;
 
 		var modalInstance = $modal.open({
@@ -1407,6 +1460,7 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "$compile",
 
 		modalInstance.result.then(function (place) {
 			if (place) {
+				console.log (place);
 				$scope.current_created_day.places.push (place);
 			}
 		}, function () {
@@ -1505,37 +1559,40 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "$compile",
 
 		var title = ADT_string_trim ($scope.current_created_day.title);
 		if (title == "") {
-			var pre_border = $("#creation_title").css ("border-color");
-			$("#creation_title").css ({ "text-shadow": "0 0 10px red", "border-color": "red" });
-			$("#creation_title").val ("Title required");
-			$("#creation_title").focus (function () {
+			var creation_title = $("#creation_title");
+			var pre_border = creation_title.css ("border-color");
+			creation_title.css ({ "text-shadow": "0 0 10px red", "border-color": "red" });
+			creation_title.val ("Title required");
+			creation_title.focus (function () {
 				$scope.creation_title_exists = false;
-				$("#creation_title").val ("");
-				$("#creation_title").css ({ "text-shadow": "none", "border-color": pre_border });
+				creation_title.val ("");
+				creation_title.css ({ "text-shadow": "none", "border-color": pre_border });
 			});
 			ok = false;
 		}
 
 		var keywords = ADT_string_trim ($scope.current_created_day.keywords);
 		if (keywords == "") {
-			var pre_border = $("#creation_keywords").css ("border-color");
-			$("#creation_keywords").css ({ "text-shadow": "0 0 10px red", "border-color": "red" });
-			$("#creation_keywords").val ("Comment required");
-			$("#creation_keywords").focus (function () {
-				$("#creation_keywords").val ("");
-				$("#creation_keywords").css ({ "text-shadow": "none", "border-color": pre_border });
+			var creation_keywords = $("#creation_keywords");
+			var pre_border = creation_keywords.css ("border-color");
+			creation_keywords.css ({ "text-shadow": "0 0 10px red", "border-color": "red" });
+			creation_keywords.val ("Comment required");
+			creation_keywords.focus (function () {
+				creation_keywords.val ("");
+				creation_keywords.css ({ "text-shadow": "none", "border-color": pre_border });
 			});
 			ok = false;
 		}
 
 		var description = ADT_string_trim ($scope.current_created_day.description);
 		if (description == "") {
-			var pre_border = $("#creation_descrip").css ("border-color");
-			$("#creation_descrip").css ({ "text-shadow": "0 0 10px red", "border-color": "red" });
-			$("#creation_descrip").val ("Comment required");
-			$("#creation_descrip").focus (function () {
-				$("#creation_descrip").val ("");
-				$("#creation_descrip").css ({ "text-shadow": "none", "border-color": pre_border });
+			var creation_descrip = $("#creation_descrip");
+			var pre_border = creation_descrip.css ("border-color");
+			creation_descrip.css ({ "text-shadow": "0 0 10px red", "border-color": "red" });
+			creation_descrip.val ("Comment required");
+			creation_descrip.focus (function () {
+				creation_descrip.val ("");
+				creation_descrip.css ({ "text-shadow": "none", "border-color": pre_border });
 			});
 			ok = false;
 		}
@@ -1543,14 +1600,15 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "$compile",
 		if (ok) {
 			for (var index in $scope.my_days) {
 				if ($scope.current_created_day.title == $scope.my_days[index].title) {
-					var pre_border = $("#creation_title").css ("border-color");
-					$("#creation_title").css ({ "text-shadow": "0 0 10px red", "border-color": "red" });
-					var used_title = $("#creation_title").val ();
-					$("#creation_title").val (used_title + " (Title already exists)");
-					$("#creation_title").focus (function () {
+					var creation_title = $("#creation_title");
+					var pre_border = creation_title.css ("border-color");
+					creation_title.css ({ "text-shadow": "0 0 10px red", "border-color": "red" });
+					var used_title = creation_title.val ();
+					creation_title.val (used_title + " (Title already exists)");
+					creation_title.focus (function () {
 						$scope.creation_title_exists = false;
-						$("#creation_title").val (used_title);
-						$("#creation_title").css ({ "text-shadow": "none", "border-color": pre_border });
+						creation_title.val (used_title);
+						creation_title.css ({ "text-shadow": "none", "border-color": pre_border });
 					});
 
 					return;
@@ -1564,6 +1622,14 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "$compile",
 			$scope.creation_clear ();
 			$scope.find_a_day.active = true;
 		}
+
+	};
+
+	
+	$scope.creation_day_display_pic = function (stored_pic) {
+		var image = new Image ();
+		image.src = "/photos?action=img&title=" + stored_pic;
+		$("#creation_photo_" + stored_pic).append (image);
 
 	};
 
@@ -1710,33 +1776,37 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "$compile",
 	};
 
 	$scope.photo_storage = {
-		count: 0,
+		count: photoService.current_count,
 		total_allowed: photoService.total_allowed_photos,
-		available_files: []
+		available_files: photoService.title_list
 	};
 
 	$scope.open_add_photo_modal = function () {
-		var promise = photoService.getCurrentCount ();
-		promise.then (function (count) {
-			$scope.photo_storage.count = count;
-			$scope.total_allowed =  photoService.total_allowed_photos - count;
 
-			var modalInstance = $modal.open({
-				templateUrl: 'addPhotosModalContent.html',
-		    		controller: adaythere.AddPhotosModalInstanceCtrl,
-		    		resolve: {
-					available_count: photoService.total_allowed_photos - count
-		    		},
-		    		scope: $scope,
-			    	compile: $compile,
-			    	photoService: photoService
-			});
+		$scope.photo_storage.count = photoService.current_count;
+		$scope.available_fles = photoService.title_list;
+		
+		var modalInstance = $modal.open({
+			templateUrl: 'addPhotosModalContent.html',
+	    		controller: adaythere.AddPhotosModalInstanceCtrl,
+	    		scope: $scope,
+		    	compile: $compile,
+		    	photoService: photoService
+		});
 
-			modalInstance.result.then(function (marker_content) {
+		modalInstance.result.then(function (selections) {
+			
+			for (var each in selections) {
+				if (selections.hasOwnProperty (each)) {
+					var photo = new ADT_DayPhoto ();
+					photo.title = selections[each].title;
+					photo.description = "";
+					$scope.current_created_day.photos.push (photo);
+				}
+			}
 
-			}, function () {
-				console.log ('Modal dismissed at: ' + new Date());
-			});
+		}, function () {
+			console.log ('Modal dismissed at: ' + new Date());
 		});
 	};
 
@@ -1773,13 +1843,8 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "$compile",
 			}
 		}
 
-		$scope.backup_copy_of_day[day.title] = ADT_shallow_copy (day);
-		$scope.backup_copy_of_day[day.title].places = [];
+		$scope.backup_copy_of_day[day.title] = ADT_CreatedDay.copy (day);
 
-		for (var each in day.places) {
-			$scope.backup_copy_of_day[day.title].places[each] = ADT_shallow_copy (day.places[each]);
-		}
-		
 		$scope.display_day_view(day, index);
 
 		day.is_editable = true;
@@ -1787,19 +1852,24 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "$compile",
 		$("#creation_save_button").attr("disabled", true);
 		$("#creation_clear_button").attr("disabled", true);
 		$("#creation_photo_button").attr("disabled", true);
+		$("#creation_title").attr("disabled", true);
 	};
 
 	$scope.cancel_changes_to_day = function (day) {
-		for (var each in day.places) {
-			$scope.hide_all_markers (each);
-		}
 
+		$scope.hide_all_markers ();
+		
 		day.is_editable = false;
 		day.keywords = $scope.backup_copy_of_day[day.title].keywords;
 		day.description = $scope.backup_copy_of_day[day.title].description;
 		day.places = $scope.backup_copy_of_day[day.title].places;
 		
 		$scope.current_created_day = new ADT_CreatedDay ();
+		
+		$("#creation_save_button").attr("disabled", false);
+		$("#creation_clear_button").attr("disabled", false);
+		$("#creation_photo_button").attr("disabled", false);
+		$("#creation_title").attr("disabled", false);
 	};
 
 
@@ -1860,21 +1930,22 @@ adaythere.controller ("find_a_day_controller", ["$scope", "$http", "profileServi
 	};
 }]);
 
-adaythere.AddPhotosModalInstanceCtrl = function ($scope, $compile, photoService, available_count) {
-	$scope.uploaded_files = [];
+adaythere.AddPhotosModalInstanceCtrl = function ($scope, $modalInstance, $compile, photoService) {
 
-	$scope.accepted_formats = [ "jpeg", "png", "svg", "bmp", "gif" ];
+	$scope.collapsed = {}
 
 	var list = null;
 
 	$scope.file_selection = function (element) {
 		var files = element.files;
+		var available_count = photoService.total_allowed_photos - photoService.current_count;
 
 		var length = files.length > available_count ? available_count : files.length;
+
 		var compiled_buttons = $compile(
-			"<input type=button ng-click='upload_checked_photos()' value='Upload Selected' />"
-			+ "<input type=button ng-click='remove_checked_photos()' value='Remove Selected' />"
-			+ "<input type=button ng-click='toggle_selection()' value='Toggle Selection' />"
+			"<input type=button ng-click='upload_checked_photos()' value='Upload Selected' class='btn btn-primary' />"
+			+ "<input type=button ng-click='remove_checked_photos()' value='Remove Selected' class='btn btn-primary'/>"
+			+ "<input type=button ng-click='toggle_selection()' value='Toggle Selection' class='btn btn-primary' />"
 		)($scope);
 		
 		if (length > 0 && list == null) {
@@ -1888,7 +1959,7 @@ adaythere.AddPhotosModalInstanceCtrl = function ($scope, $compile, photoService,
 		for (var i = 0; i < length; ++i) {
 			var file = files[i];
 			var name = file.name;
-
+				
 			var url = window.URL.createObjectURL(file);
 			var img = new Image ();
 
@@ -1925,30 +1996,45 @@ adaythere.AddPhotosModalInstanceCtrl = function ($scope, $compile, photoService,
 			var li = $(items[i]);
 			var checkbox = $(li.children ('.pic_loader_action_checkbox')[0]);
 			var title =  $(li.children ('.pic_loader_title')[0]).val ();
-			if (title == "") {
-				window.alert ("All photos must have a unique title");
-				return;
+
+			var title_exists = false;
+
+			for (var j = 0; j < photoService.title_list.length; ++j) {
+				if (photoService.title_list[j] == title) {
+					title_exists = true;
+					break
+				}
 			}
 
-			if (checkbox.is(':checked')) {
+			if (title == "" || title_exists) {
+				continue;				
+			}
+
+
+			if (checkbox.is (':checked')) {
 				var img = $(li.children ('img')[0]).get (0);
 				var canvas = document.createElement("canvas");
 				canvas.width = img.width;
 				canvas.height = img.height;
 				var ctx = canvas.getContext("2d");
-				ctx.drawImage(img, 0, 0);
+				ctx.drawImage(img, 0, 0, img.width, img.height);
 				var storage_obj = {
-					url: canvas.toDataURL("image/*").replace("data:image/*;base64,", ""),
+					url: canvas.toDataURL("image/png").replace("data:image/png;base64,", ""),
 					title: title
 				};
 
 				selected_for_upload.push (storage_obj);
+				li.remove ();
 			}
 
 		}
 
-		photoService.upload (selected_for_upload).then (function (count) {
-			console.log (count);				
+		photoService.upload (selected_for_upload).then (function () {
+
+ 			$scope.photo_storage.count = photoService.current_count,
+              		$scope.photo_storage.total_allowed = photoService.total_allowed_photos,
+               		$scope.photo_storage.available_files = photoService.title_list
+			
 		});
 	};
 
@@ -1978,6 +2064,39 @@ adaythere.AddPhotosModalInstanceCtrl = function ($scope, $compile, photoService,
 		}
 	}	
 
+	$scope.display_pic = function (stored_pic) {
+		if (typeof $scope.collapsed[stored_pic] != 'undefined') {
+			$scope.collapsed[stored_pic] = !$scope.collapsed[stored_pic];
+			return;
+		}
+
+		var image = new Image ();
+		image.src = "/photos?action=img&title=" + stored_pic;
+		$("#" + stored_pic).append (image);
+
+		$scope.collapsed[stored_pic] = false;
+	};
+
+	$scope.is_collapsed = function (stored_pic) {
+		return typeof $scope.collapsed[stored_pic] == 'undefined' ? true : $scope.collapsed[stored_pic];
+	}	
+
+	var selections = {};
+	$scope.stored_pics_selection_changed = function (stored_pic, confirmed) {
+		if (confirmed) {
+			selections[stored_pic.title] = stored_pic;	
+		} else {
+			delete selections[stored_pic.title];
+		}
+	};
+
+	$scope.addphotos_modal_add_to_day = function () {
+		$modalInstance.close (selections);
+	};
+
+	$scope.addphotos_modal_close = function () {
+		$modalInstance.close ();
+	};
 };
 
 adaythere.MarkerModalInstanceCtrl = function ($scope, $modalInstance, marker_content, show_add_button, map) {

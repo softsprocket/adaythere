@@ -4,9 +4,10 @@
 
 import webapp2
 import json
-from app.lib.db.places import Location, Place, Day
+from app.lib.db.places import Location, Place, Day, DayPhoto
 import logging
 from app.lib.db.user import User
+from app.lib.db.photos import Photos
 from app.adaythere import ADayThere
 
 class PlacesHandler(webapp2.RequestHandler):
@@ -19,6 +20,8 @@ class PlacesHandler(webapp2.RequestHandler):
             return
 
         data = json.loads(self.request.body)
+        
+        print (data)
 
         day = Day()
         day.userid = db_user.user_id
@@ -44,6 +47,23 @@ class PlacesHandler(webapp2.RequestHandler):
             p.location.longitude = str(place['location']['longitude'])
             p.location.vicinity = place['vicinity']
             day.places.append(p)
+
+        day.photos = []
+        for photo in data['photos']:
+            day_photo = DayPhoto()
+            day_photo.title = photo['title']
+            day_photo.description = photo['description']
+
+            day.photos.append(day_photo)
+        
+            photo_query = Photos.query_photo(db_user.user_id, photo['title'])
+            pq = photo_query.get()
+            cnt = pq.used_by.count(day.title)
+            if (cnt == 0):
+                pq.used_by.append(day.title)
+
+            pq.put()
+
 
         day.put()
 
@@ -102,6 +122,20 @@ class PlacesHandler(webapp2.RequestHandler):
             p.location.vicinity = place['vicinity']
             day.places.append(p)
 
+        day.photos = []
+        for photo in data['photos']:
+            day_photo = DayPhoto()
+            day_photo.title = photo['title']
+            day_photo.description = photo['description']
+
+            day.photos.append(day_photo)
+
+            photo_query = Photos.query_photo(db_user.user_id, photo['title'])
+            pq = photo_query.get()
+            cnt = pq.used_by.count(day.title)
+            if (cnt == 0):
+                pq.used_by.append(day.title)
+
         day.put ()
 
         self.response.status = 200
@@ -115,9 +149,19 @@ class PlacesHandler(webapp2.RequestHandler):
             return
 
         title = self.request.get ('title');
-        day = Day.query_user_title(db_user.user_id, title)
+        day = Day.query_user_title(db_user.user_id, title).get()
 
-        day.get ().key.delete ()
+        for photo in day.photos:
+            photo_query = Photos.query_photo(db_user.user_id, photo)
+            pq = photo_query.get()
+            try:
+                index = pq.index(day.title)
+                day.title.pop(index)
+            except:
+                pass
+
+            
+        day.key.delete ()
 
         self.response.status = 200
 

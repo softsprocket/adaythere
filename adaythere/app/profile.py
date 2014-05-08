@@ -64,7 +64,7 @@ class ProfileHandler(webapp2.RequestHandler):
 
         if operation == 'add_tool_access':
             db_user = User.query_user_id(str(user.user_id()))
-            if db_user.has_tool_access is not None and db_user.has_tool_access:
+            if db_user is not None and db_user.has_tool_access:
                 return
 
             db_user.has_tool_access = True
