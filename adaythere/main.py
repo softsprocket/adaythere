@@ -185,10 +185,10 @@ class MapTools():
             .close_element("accordion-group")\
             .close_element("accordion")\
             .close_element("tab")\
-            .open_element("tab", {"heading":"Create A Day"})\
+            .open_element("tab", {"heading":"Create Day"})\
             .append_to_element(createADayView.get())\
             .close_element("tab")\
-            .open_element("tab", {"active":"find_a_day.active", "heading":"Find A Day"})\
+            .open_element("tab", {"active":"find_a_day.active", "heading":"My Days"})\
             .append_to_element(findADayView.get())\
             .close_element("tab")\
             .close_element("tabset")\
