@@ -121,6 +121,7 @@ function ADT_Place () {
 	this.comment = "";
 	this.location = {};
 	this.vicinity = "";
+	this.types = [];
 
 	this.marker = null;
 }
@@ -144,6 +145,8 @@ ADT_Place.from_marker_content = function (marker_content) {
 				place.vicinity = marker_content.vicinity;
 			} else if (index == "is_editable") {
 				place.is_editable = marker_content.is_editable;
+			} else if (index == "types") {
+				place.types = marker_content.types;
 			}
 		}
 	}
@@ -1462,6 +1465,24 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "$compile",
 			if (place) {
 				console.log (place);
 				$scope.current_created_day.places.push (place);
+				var sep = "";
+				if ($scope.current_created_day.keywords.length > 0) {
+					sep = ", ";
+				}
+				for (var i = 0; i < place.types.length; ++i) {
+
+					if (place.types[i] == "establishment") {
+						continue;
+					}
+
+					if ($scope.current_created_day.keywords.indexOf (place.types[i]) > -1) {
+						continue;
+					}
+
+					$scope.current_created_day.keywords += sep;
+					$scope.current_created_day.keywords += place.types[i];
+					sep = ", ";
+				}
 			}
 		}, function () {
 		
@@ -1491,7 +1512,13 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "$compile",
 
 	$scope.set_marker_at_place = function (location) {
 		var place = new ADT_Place ();
-
+		
+		if (location.types) {
+			for (var i = 0; i < location.types.length; ++i) {
+				place.types.push (location.types[i]);
+			}	
+		}
+			
 		if (location.geometry) {
 			place.location.latitude = location.geometry.location.lat ();
 			place.location.longitude = location.geometry.location.lng ();
@@ -2120,6 +2147,7 @@ adaythere.MarkerModalInstanceCtrl = function ($scope, $modalInstance, marker_con
 			if (place.equals (saved_place)) {
 				return;
 			}
+
 		}
 
 		$scope.remove_marker(marker_content);

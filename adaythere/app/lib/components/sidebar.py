@@ -105,7 +105,7 @@ class CreateADayView:
                 <label for="creation_title">Title</label>
                 <input id="creation_title" class="form-control" type='text' ng-model='current_created_day.title'></input>
                 <label for="creation_keywords">Keywords</label>
-                <input id="creation_keywords" class="form-control" type='text' ng-model='current_created_day.keywords'></input>
+                <input id="creation_keywords" class="form-control" type='text' ng-model='current_created_day.keywords' ng-disabled="true"></input>
                 <label for="creation_descrip">Comments</label>
                 <textarea id="creation_descrip"  class="form-control" ng-model='current_created_day.description'></textarea>
                 <fieldset>
@@ -162,7 +162,7 @@ class FindADayView:
                     <div collapse="day.is_collapsed">
                         <div class="well well-lg">
                             <label for="day_keywords">Keywords</label>
-                            <input id="day_keywords" class="form-control" type='text' ng-disabled="!day_is_editable(day)" ng-model='day.keywords'></input>
+                            <input id="day_keywords" class="form-control" type='text' ng-disabled="true" ng-model='day.keywords'></input>
                             <label for="day_description">Description</label>
                             <input id="day_description" class="form-control" type='text' ng-disabled="!day_is_editable(day)" ng-model='day.description'></input>
                             <fieldset>
@@ -212,7 +212,7 @@ class FindADayView:
                         <div collapse="day.is_collapsed">
                             <div class="well well-lg">
                                 <label for="deleted_day_keywords">Keywords</label>
-                                <input id="deleted_day_keywords" class="form-control" type='text' ng-disabled="!day_is_editable(day)" ng-model='day.keywords'></input>
+                                <input id="deleted_day_keywords" class="form-control" type='text' ng-disabled="true" ng-model='day.keywords'></input>
                                 <label for="deleted_day_description">Description</label>
                                 <input id="deleted_day_description" class="form-control" type='text' ng-disabled="!day_is_editable(day)" ng-model='day.description'></input>
                                 <fieldset>
