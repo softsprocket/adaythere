@@ -181,7 +181,9 @@ ADT_CreatedDay.prototype.clear = function () {
 	this.description = "";
 	this.keywords = "";
 	for (var index in this.places) {
-		this.places[index].marker.setMap (null);
+		if (this.places[index].marker) {
+			this.places[index].marker.setMap (null);
+		}
 	}
 
 	this.places = [];
@@ -789,7 +791,7 @@ ADT_UserDaysService.prototype.getDays = function () {
 	if (this.user_days.length > 0) {
 		deferred.resolve (this.user_days);
 	} else {
-		this.$http.get ("/places").success (function (data, status, headers, config) {
+		this.$http.get ("/days").success (function (data, status, headers, config) {
 			for (var each in data) {
 				var day = JSON.parse (data[each]);
 				day.is_editable = false;
@@ -813,7 +815,7 @@ ADT_UserDaysService.prototype.addDay = function (created_day) {
 	var day = ADT_CreatedDay.copy (created_day);
 	
 	var self = this;
-	this.$http.put ("/places", day.to_json ()).success (function (data, status, headers, config) {
+	this.$http.put ("/days", day.to_json ()).success (function (data, status, headers, config) {
 		day.is_collapsed = false;
 		for (var index in self.user_days) {
 			self.user_days[index].is_collapsed = true;
@@ -832,7 +834,7 @@ ADT_UserDaysService.prototype.updateDay = function (updated_day) {
 	var day = ADT_CreatedDay.copy (updated_day);
 
 	var self = this;
-	this.$http.post ("/places", day.to_json ()).success (function (data, status, headers, config) {
+	this.$http.post ("/days", day.to_json ()).success (function (data, status, headers, config) {
 	
 	}).error (function (data, status, headers, config) {
 		console.error (status, data);
@@ -843,7 +845,7 @@ ADT_UserDaysService.prototype.updateDay = function (updated_day) {
 ADT_UserDaysService.prototype.deleteDay = function (deleted_day) {
 	var day = ADT_CreatedDay.copy (deleted_day);
 	var self = this;
-	this.$http.delete ("/places", { params: { title: day.title }}).success (function (data, status, headers, config) {
+	this.$http.delete ("/days", { params: { title: day.title }}).success (function (data, status, headers, config) {
 
 		for (i in self.user_days) {
 
@@ -1838,7 +1840,6 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "$compile",
 	};
 
 	$scope.edit_saved_day = function (day) {
-
 		$scope.current_created_day = day;
 		for (var index in $scope.current_created_day.places) {
 			$scope.current_created_day.places[index].marker.setMap (googleMapService.get ());
@@ -1863,6 +1864,7 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "$compile",
 
 		if (!$scope.current_created_day.is_cleared()) {
 			var rv = window.confirm("Overwrite current unsaved day?");
+			console.log (rv);
 			if (rv) {
 				$scope.current_created_day.clear ();
 			} else {
@@ -1878,7 +1880,7 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "$compile",
 		$scope.current_created_day = day;
 		$("#creation_save_button").attr("disabled", true);
 		$("#creation_clear_button").attr("disabled", true);
-		$("#creation_photo_button").attr("disabled", true);
+		$("#creation_photo_button").attr("disabled", false);
 		$("#creation_title").attr("disabled", true);
 	};
 
@@ -1903,6 +1905,16 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "$compile",
 	$scope.save_modified_day = function (day) {
 		userDaysService.updateDay (day);
 		day.is_editable = false;
+
+		$scope.current_created_day = ADT_CreatedDay.copy (day);
+
+		$scope.hide_all_markers ();
+		$scope.creation_clear ();
+
+		$("#creation_save_button").attr("disabled", false);
+		$("#creation_clear_button").attr("disabled", false);
+		$("#creation_photo_button").attr("disabled", false);
+		$("#creation_title").attr("disabled", false);
 	};
 
 	$scope.copy_day_as = function (day) {

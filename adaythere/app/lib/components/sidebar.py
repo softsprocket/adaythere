@@ -147,7 +147,7 @@ class CreateADayView:
         return self.html
 
 
-class FindADayView:
+class MyDaysView:
 
     def __init__(self, logged_in):
         if logged_in:

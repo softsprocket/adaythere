@@ -1,5 +1,5 @@
 """
-    ndb places models
+    ndb days models
 """
 
 from google.appengine.ext import ndb
