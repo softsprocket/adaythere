@@ -1,16 +1,18 @@
 """
-    Request handler for /places
+    Request handler for /days
 """
 
 import webapp2
 import json
-from app.lib.db.places import Location, Place, Day, DayPhoto
+from app.lib.db.days import Location, Place, Day, DayPhoto
 import logging
 from app.lib.db.user import User
 from app.lib.db.photos import Photos
 from app.adaythere import ADayThere
+from app.lib.db.keywords import Keywords
+from app.lib.db.keywords import KeywordsDayList
 
-class PlacesHandler(webapp2.RequestHandler):
+class DayHandler(webapp2.RequestHandler):
 
     def put(self):
 
@@ -20,7 +22,7 @@ class PlacesHandler(webapp2.RequestHandler):
             return
 
         data = json.loads(self.request.body)
-        
+
         print (data)
 
         day = Day()
@@ -36,7 +38,12 @@ class PlacesHandler(webapp2.RequestHandler):
                 day.keywords = data['keywords'].split(' ')
         else:
             day.keywords = data['keywords']
-        
+
+        for keyword in day.keywords:
+            Keywords.add_if_missing(keyword)
+
+
+
         day.places = []
         for place in data['places']:
             p = Place()
@@ -55,7 +62,7 @@ class PlacesHandler(webapp2.RequestHandler):
             day_photo.description = photo['description']
 
             day.photos.append(day_photo)
-        
+
             photo_query = Photos.query_photo(db_user.user_id, photo['title'])
             pq = photo_query.get()
             cnt = pq.used_by.count(day.title)
@@ -67,7 +74,10 @@ class PlacesHandler(webapp2.RequestHandler):
 
         day.put()
 
+        KeywordsDayList.add_keywords(day)
+
         self.response.status = 200
+
 
     def get(self):
 
@@ -83,7 +93,7 @@ class PlacesHandler(webapp2.RequestHandler):
 
         for each in data:
             days.append(json.dumps(each.to_dict()))
-            
+
         self.response.write(json.dumps(days))
 
 
@@ -110,6 +120,9 @@ class PlacesHandler(webapp2.RequestHandler):
                 day.keywords = data['keywords'].split(' ')
         else:
             day.keywords = data['keywords']
+
+        for keyword in day.keywords:
+            Keywords.add_if_missing(keyword)
 
         day.places = []
         for place in data['places']:
@@ -138,6 +151,8 @@ class PlacesHandler(webapp2.RequestHandler):
 
         day.put ()
 
+        KeywordsDayList.add_keywords(day)
+
         self.response.status = 200
 
 
@@ -160,7 +175,6 @@ class PlacesHandler(webapp2.RequestHandler):
             except:
                 pass
 
-            
         day.key.delete ()
 
         self.response.status = 200

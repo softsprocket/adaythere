@@ -15,12 +15,13 @@ from app.lib.components.sidebar import MapSearchView
 from app.lib.components.sidebar import PlacesSearchView
 from app.lib.components.sidebar import MarkersView
 from app.lib.components.sidebar import CreateADayView
-from app.lib.components.sidebar import FindADayView
-import app.places
+from app.lib.components.sidebar import MyDaysView
+import app.days
 import app.login
 import app.profile
 import app.admin
 import app.photos
+import app.keywords
 from webapp2_extras import i18n
 import os
 from app.lib.google.maps import Maps
@@ -159,7 +160,7 @@ class MapTools():
         placesSearchView = PlacesSearchView(logged_in)
         markersView = MarkersView(logged_in)
         createADayView = CreateADayView(logged_in)
-        findADayView = FindADayView(logged_in)
+        myDaysView = MyDaysView(logged_in)
 
         profileModal = ProfileModal()
         markerModal = MarkerModal()
@@ -189,7 +190,7 @@ class MapTools():
             .append_to_element(createADayView.get())\
             .close_element("tab")\
             .open_element("tab", {"active":"find_a_day.active", "heading":"My Days"})\
-            .append_to_element(findADayView.get())\
+            .append_to_element(myDaysView.get())\
             .close_element("tab")\
             .close_element("tabset")\
             .open_element("div", {"ng-controller":"profileCtrl"})\
@@ -212,10 +213,11 @@ class MapTools():
 app = webapp2.WSGIApplication([
     ('/', MainHandler),
     ('/photos', app.photos.PhotosHandler),
-    ('/places', app.places.PlacesHandler),
+    ('/days', app.days.DayHandler),
     ('/login', app.login.LoginHandler),
     ('/logout', app.login.LogoutHandler),
     ('/profile', app.profile.ProfileHandler),
-    ('/admin_profiles', app.admin.ProfilesHandler)
+    ('/admin_profiles', app.admin.ProfilesHandler),
+    ('/keywords', app.keywords.KeywordHandler)
 ], debug=True)
 
