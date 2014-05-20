@@ -874,6 +874,46 @@ adaythere.factory ("userDaysService", ["$http", "$q", function ($http, $q) {
 	return new ADT_UserDaysService ($http, $q);
 }]);
 
+/*
+ *  
+ *  ADT_LocalityDaysService
+ *  
+ */
+
+function ADT_LocalityDaysService ($http, $q) {
+	this.$http = $http;
+	this.$q = $q;
+
+}
+
+ADT_LocalityDaysService.prototype.getDays = function (locality, limit, offset, keywords) {
+	var deferred = this.$q.defer ();
+	var self = this;
+
+	var config = {
+		params : {
+			locality: locality,
+			limit: limit,
+			offset: offset,
+			keywords: keywords
+		}
+	};
+
+	this.$http.get ("/locality_days", config).success (function (data, status, headers, config) {
+		deferred.resolve (data);
+	}).error (function (data, status, headers, config) {
+		console.error (status, data);
+		deferred.reject ();
+	});
+
+
+	return deferred.promise;
+};
+
+adaythere.factory ("localityDaysService", ["$http", "$q", function ($http, $q) {
+	return new ADT_LocalityDaysService ($http, $q);
+}]);
+
 
 function ADT_PhotoService ($http, $q) {
 	this.$http = $http;

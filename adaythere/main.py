@@ -22,6 +22,7 @@ import app.profile
 import app.admin
 import app.photos
 import app.keywords
+import app.locality_days
 from webapp2_extras import i18n
 import os
 from app.lib.google.maps import Maps
@@ -569,6 +570,7 @@ app = webapp2.WSGIApplication([
     ('/logout', app.login.LogoutHandler),
     ('/profile', app.profile.ProfileHandler),
     ('/admin_profiles', app.admin.ProfilesHandler),
-    ('/keywords', app.keywords.KeywordHandler)
+    ('/keywords', app.keywords.KeywordHandler),
+    ('/locality_days', app.locality_days.LocalityDaysHandler)
 ], debug=True)
 
