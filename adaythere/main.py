@@ -175,8 +175,8 @@ class HomeHandler(webapp2.RequestHandler):
 
         adaythere.add_script_tags_for_body([
             { "src":"js/jquery-1.11.0-beta2.js" },
-            { "src":"js/angular/angular-route.min.js" },
             { "src":"js/angular/angular.min.js" },
+            { "src":"js/angular/angular-route.min.js" },
             { "src":"js/ui-bootstrap-tpls-0.10.0.min.js" },
             { "src":"js/bootstrap.min.js" },
             { "src":"js/flatui-radio.js" },
@@ -191,7 +191,7 @@ class HomeHandler(webapp2.RequestHandler):
             { "src":"js/jquery.parallax.min.js" },
             { "src":"js/startup-kit.js" },
             { "src": maps.get_script_src() },
-            { "src":"js/home.js"}
+            { "src":"js/adaythere.js"}
         ])
 
         adaythere.open_element("div", {"class":"page-wrapper"})
