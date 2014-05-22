@@ -886,7 +886,7 @@ function ADT_LocalityDaysService ($http, $q) {
 
 }
 
-ADT_LocalityDaysService.prototype.getDays = function (locality, limit, offset, keywords) {
+ADT_LocalityDaysService.prototype.getDays = function (locality, limit, cursor, keywords) {
 	var deferred = this.$q.defer ();
 	var self = this;
 
@@ -894,7 +894,7 @@ ADT_LocalityDaysService.prototype.getDays = function (locality, limit, offset, k
 		params : {
 			locality: locality,
 			limit: limit,
-			offset: offset,
+			cursor: cursor,
 			keywords: keywords
 		}
 	};
@@ -1090,6 +1090,25 @@ ADT_BoundingCircle.prototype.updateStatus = function (visible) {
 ADT_BoundingCircle.prototype.addClickListener = function (listener) {
 	this.clickListener = listener;
 }
+
+adaythere.controller ("daysSearchCtrl", ["$scope", "localityDaysService", "profileService", function ($scope, localityDaysService, profileService) {
+
+
+	$scope.become_a_contributor = function () {
+		profileService.add_tool_access ().then (function (result) {
+			if (result) {
+				ADT_SidebarDisplayControlInstance.display_control = true;
+				$("#find_a_day").slideUp ("slow");
+			}
+		});
+	};
+
+	$scope.getLocalityDays = function (locality, limit, cursor, keywords) {
+		localityDaysService.getDays(locality, limit, cursor, keywords).then (function (data) {
+			
+		});	
+	};
+}]);
 
 adaythere.controller ("loginCtrl", ["$scope", "$http", "$modal", function ($scope, $http, $modal) {
 
@@ -1994,18 +2013,6 @@ adaythere.controller ("welcome_controller", ["$scope", function ($scope) {
 	$scope.open_welcome_doors = function () {
 		$("#welcome_to_left").hide ("slow");
 		$("#welcome_to_right").hide ("slow");
-	};
-}]);
-
-adaythere.controller ("find_a_day_controller", ["$scope", "$http", "profileService", function ($scope, $http, profileService) {
-
-	$scope.become_a_contributor = function () {
-		profileService.add_tool_access ().then (function (result) {
-			if (result) {
-				ADT_SidebarDisplayControlInstance.display_control = true;
-				$("#find_a_day").slideUp ("slow");
-			}
-		});
 	};
 }]);
 

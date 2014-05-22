@@ -25,7 +25,7 @@ class LocalityDaysHandler(webapp2.RequestHandler):
         return_vals = {}
         return_vals['results'], return_vals['cursor'], return_vals['more'] = kdl_query.fetch_page(limit, options)
 
-
-                
+        self.response.write(json.dumps(return_vals))
+                        
         
                 

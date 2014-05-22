@@ -4,6 +4,7 @@
 
 from google.appengine.ext import ndb
 from app.lib.db.location import Location
+import random
 
 
 class Place(ndb.Model):
@@ -34,4 +35,24 @@ class Day(ndb.Model):
     @classmethod
     def query_user_title(cls, userid, title):
         return cls.query(cls.userid == userid, cls.title == title)
+
+    @classmethod
+    def query_random(cls, num_samples, minimum_rating=None):
+        keys = None
+
+        if minimum_rating is not None:
+            keys = cls.query(averageReview == minimum_rating).fetch(keys_only=True)
+        else:
+            keys = cls.query().fetch(keys_only=True)
+
+        if (len(keys) < num_samples):
+            num_samples = len(keys)
+
+        rv = []
+        selected_keys = random.sample(keys, num_samples)
+        
+        for key in selected_keys:
+            rv.append(key.get())
+
+        return rv
 
