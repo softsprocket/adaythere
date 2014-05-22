@@ -22,6 +22,7 @@ import app.profile
 import app.admin
 import app.photos
 import app.keywords
+import app.locality_days
 from webapp2_extras import i18n
 import os
 from app.lib.google.maps import Maps
@@ -31,6 +32,8 @@ import inspect
 from app.lib.db.user import User
 from app.lib.components.genmodal import Modal, ProfileModal, MarkerModal, SelectDayModal, AdminProfileModal, AddPhotosModal
 from app.lib.components.element import Elements
+from app.lib.components.day_views import DayDisplay, DayPhotoDisplay, DayInfoDisplay
+from app.lib.db.days import Day, DayPhoto
 
 class ToolsHandler(webapp2.RequestHandler):
     def get(self):
@@ -130,7 +133,7 @@ class ToolsHandler(webapp2.RequestHandler):
                 """)\
             .close_element("section")
 
-        adaythere.open_element("section", { "id":"find_a_day", "ng-controller":"find_a_day_controller" })\
+        adaythere.open_element("section", { "id":"find_a_day", "ng-controller":"daysSearchCtrl" })\
             .append_to_element("""
                     <button type=button ng-click="become_a_contributor()" style="position:absolute;bottom:0">Get Access To Tools</button>
                 """)\
@@ -172,6 +175,7 @@ class HomeHandler(webapp2.RequestHandler):
 
         adaythere.add_script_tags_for_body([
             { "src":"js/jquery-1.11.0-beta2.js" },
+            { "src":"js/angular/angular-route.min.js" },
             { "src":"js/angular/angular.min.js" },
             { "src":"js/ui-bootstrap-tpls-0.10.0.min.js" },
             { "src":"js/bootstrap.min.js" },
@@ -224,135 +228,89 @@ class HomeHandler(webapp2.RequestHandler):
                             <div class="row">
                                 <div class="col-sm-6">
                                     <h3>Your Day, Your Way</h3>
-                                    <p>Let us help you create the perfect day</p>
+                                    <p>Let us help you create the perfect day</p>
                                 </div>
                             </div>
                         </div>
                     </section>
         """
 
-        adaythere.open_element("header", {"id":"page_header", "ng-controller":"welcome_controller"})\
+        adaythere.open_element("header", { "id":"page_header" })\
             .append_to_element(header_display)\
             .close_element("header")
 
-        days_display = """
-            <div class="container">
+        days_display_element = Elements()
+        days_display_element.open_element("div", { "class": "container" })
+        days_display_element.append_to_element("""
                 <h3>
                     Check out these amazing days that people have created.
                 </h3>
+        """)
 
-                <div class="days">
-                    <div class="day-wrapper">
-                        <div class="day">
-                            <div class="photo-wrapper">
-                                <div class="photo" style="background-image: url(images/placeholder/img-5.png);"><img alt="" src="images/placeholder/img-5.png" style="display: none;">
-                                </div>
-                                <div class="overlay">
-                                    <span class="fui-eye"> </span>
-                                </div>
-                            </div>
-                            <div class="info">
-                                <div class="name">
-                                    Day 1
-                                </div>
-                                Fine dining, Gardens and historic sites.
-                            </div>
-                        </div>
-                    </div>
+        
+        days_collection_1 = [
+                { "bgimage": "images/placeholder/img-5.png", "image": "images/placeholder/img-5.png", "title": "Day 1", "text": "Fine dining, Gardens and historic sites.", "ani_processed": False },
+                { "bgimage": "images/placeholder/img-5.png", "image": "images/placeholder/img-5.png", "title": "Day 2", "text": "Fine dining, Gardens and historic sites.", "ani_processed": False },
+                { "bgimage": "images/placeholder/img-5.png", "image": "images/placeholder/img-5.png", "title": "Day 3", "text": "Fine dining, Gardens and historic sites.", "ani_processed": False }
+        ]
 
-                    <div class="day-wrapper">
-                        <div class="day">
-                            <div class="photo-wrapper">
-                                <div class="photo" style="background-image: url(images/placeholder/img-5.png);"><img alt="" src="images/placeholder/img-5.png" style="display: none;">
-                                </div>
-                                <div class="overlay">
-                                    <span class="fui-eye"> </span>
-                                </div>
-                            </div>
-                            <div class="info">
-                                <div class="name">
-                                    Day 2
-                                </div>
-                                Fine dining, Gardens and historic sites.
-                            </div>
-                        </div>
-                    </div>
 
-                    <div class="day-wrapper">
-                        <div class="day">
-                            <div class="photo-wrapper">
-                                <div class="photo" style="background-image: url(images/placeholder/img-5.png);"><img alt="" src="images/placeholder/img-5.png" style="display: none;">
-                                </div>
-                                <div class="overlay">
-                                    <span class="fui-eye"> </span>
-                                </div>
-                            </div>
-                            <div class="info">
-                                <div class="name">
-                                    Day 3
-                                </div>
-                                Fine dining, Gardens and historic sites.
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="days">
-                    <div class="day-wrapper ani-processed" style="">
-                        <div class="day">
-                            <div class="photo-wrapper">
-                                <div class="photo" style="background-image: url(images/placeholder/img-5.png);"><img alt="" src="images/placeholder/img-5.png" style="display: none;">
-                                </div>
-                                <div class="overlay">
-                                    <span class="fui-eye"> </span>
-                                </div>
-                            </div>
-                            <div class="info">
-                                <div class="name">
-                                    Day 4
-                                </div>
-                                Fine dining, Gardens and historic sites.
-                            </div>
-                        </div>
-                    </div>
+        days_collection_2 = [
+                { "bgimage": "images/placeholder/img-5.png", "image": "images/placeholder/img-5.png", "title": "Day 4", "text": "Fine dining, Gardens and historic sites.", "ani_processed": True },
+                { "bgimage": "images/placeholder/img-5.png", "image": "images/placeholder/img-5.png", "title": "Day 5", "text": "Fine dining, Gardens and historic sites.", "ani_processed": True },
+                { "bgimage": "images/placeholder/img-5.png", "image": "images/placeholder/img-5.png", "title": "Day 6", "text": "Fine dining, Gardens and historic sites.", "ani_processed": True }
+        ]
 
-                    <div class="day-wrapper ani-processed" style="">
-                        <div class="day">
-                            <div class="photo-wrapper">
-                                <div class="photo" style="background-image: url(images/placeholder/img-5.png);"><img alt="" src="images/placeholder/img-5.png" style="display: none;">
-                                </div>
-                                <div class="overlay">
-                                    <span class="fui-eye"> </span>
-                                </div>
-                            </div>
-                            <div class="info">
-                                <div class="name">
-                                    Day 5
-                                </div>
-                                Fine dining, Gardens and historic sites.
-                            </div>
-                        </div>
-                    </div>
+        random_days = Day.query_random(6)
 
-                    <div class="day-wrapper ani-processed" style="">
-                        <div class="day">
-                            <div class="photo-wrapper">
-                                <div class="photo" style="background-image: url(images/placeholder/img-5.png);"><img alt="" src="images/placeholder/img-5.png" style="display: none;">
-                                </div>
-                                <div class="overlay">
-                                    <span class="fui-eye"> </span>
-                                </div>
-                            </div>
-                            <div class="info">
-                                <div class="name">
-                                    Day 6
-                                </div>
-                                Fine dining, Gardens and historic sites.
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        """
+        
+        photo_base_url = "/photos?action=img&title={0}"
+        rdnum = len(random_days) 
+
+        for i in range(0, rdnum):
+            item = None
+            if (i >= 3):
+                item = days_collection_2[i - 3]
+            else:
+                item = days_collection_1[i]
+            
+            day = random_days[i]
+            item['title'] = day.title
+            item['text'] = day.description
+            if day.photos is not None and (len(day.photos) > 0):
+                purl = photo_base_url.format(day.photos[0].title)
+                item['bgimage'] = purl
+                item['image'] = purl
+
+
+        days_display_element.open_element("div", { "class": "days" })
+        for each in days_collection_1:
+            day_display = DayDisplay(each["ani_processed"])
+            photo_display = DayPhotoDisplay(each["bgimage"], each["image"])
+            info_display = DayInfoDisplay(each["title"], each["text"])
+            day_display.append_to_element(photo_display.get())
+            day_display.append_to_element(info_display.get())
+
+            days_display_element.append_to_element(day_display.get())
+
+        days_display_element.close_element("div")
+
+        days_display_element.open_element("div", { "class": "days" })
+        for each in days_collection_2:
+            day_display = DayDisplay(each["ani_processed"])
+            photo_display = DayPhotoDisplay(each["bgimage"], each["image"])
+            info_display = DayInfoDisplay(each["title"], each["text"])
+            day_display.append_to_element(photo_display.get())
+            day_display.append_to_element(info_display.get())
+
+            days_display_element.append_to_element(day_display.get())
+
+        days_display_element.close_element("div")
+
+        days_display_element.close_element("div")
+
+        days_display =  days_display_element.get()
+
 
         adaythere.open_element("section", {"id":"day_search", "class": "day-search"})\
             .append_to_element(days_display)\
@@ -569,6 +527,7 @@ app = webapp2.WSGIApplication([
     ('/logout', app.login.LogoutHandler),
     ('/profile', app.profile.ProfileHandler),
     ('/admin_profiles', app.admin.ProfilesHandler),
-    ('/keywords', app.keywords.KeywordHandler)
+    ('/keywords', app.keywords.KeywordHandler),
+    ('/locality_days', app.locality_days.LocalityDaysHandler)
 ], debug=True)
 

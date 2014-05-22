@@ -874,6 +874,46 @@ adaythere.factory ("userDaysService", ["$http", "$q", function ($http, $q) {
 	return new ADT_UserDaysService ($http, $q);
 }]);
 
+/*
+ *  
+ *  ADT_LocalityDaysService
+ *  
+ */
+
+function ADT_LocalityDaysService ($http, $q) {
+	this.$http = $http;
+	this.$q = $q;
+
+}
+
+ADT_LocalityDaysService.prototype.getDays = function (locality, limit, cursor, keywords) {
+	var deferred = this.$q.defer ();
+	var self = this;
+
+	var config = {
+		params : {
+			locality: locality,
+			limit: limit,
+			cursor: cursor,
+			keywords: keywords
+		}
+	};
+
+	this.$http.get ("/locality_days", config).success (function (data, status, headers, config) {
+		deferred.resolve (data);
+	}).error (function (data, status, headers, config) {
+		console.error (status, data);
+		deferred.reject ();
+	});
+
+
+	return deferred.promise;
+};
+
+adaythere.factory ("localityDaysService", ["$http", "$q", function ($http, $q) {
+	return new ADT_LocalityDaysService ($http, $q);
+}]);
+
 
 function ADT_PhotoService ($http, $q) {
 	this.$http = $http;
@@ -1050,6 +1090,25 @@ ADT_BoundingCircle.prototype.updateStatus = function (visible) {
 ADT_BoundingCircle.prototype.addClickListener = function (listener) {
 	this.clickListener = listener;
 }
+
+adaythere.controller ("daysSearchCtrl", ["$scope", "localityDaysService", "profileService", function ($scope, localityDaysService, profileService) {
+
+
+	$scope.become_a_contributor = function () {
+		profileService.add_tool_access ().then (function (result) {
+			if (result) {
+				ADT_SidebarDisplayControlInstance.display_control = true;
+				$("#find_a_day").slideUp ("slow");
+			}
+		});
+	};
+
+	$scope.getLocalityDays = function (locality, limit, cursor, keywords) {
+		localityDaysService.getDays(locality, limit, cursor, keywords).then (function (data) {
+			
+		});	
+	};
+}]);
 
 adaythere.controller ("loginCtrl", ["$scope", "$http", "$modal", function ($scope, $http, $modal) {
 
@@ -1954,18 +2013,6 @@ adaythere.controller ("welcome_controller", ["$scope", function ($scope) {
 	$scope.open_welcome_doors = function () {
 		$("#welcome_to_left").hide ("slow");
 		$("#welcome_to_right").hide ("slow");
-	};
-}]);
-
-adaythere.controller ("find_a_day_controller", ["$scope", "$http", "profileService", function ($scope, $http, profileService) {
-
-	$scope.become_a_contributor = function () {
-		profileService.add_tool_access ().then (function (result) {
-			if (result) {
-				ADT_SidebarDisplayControlInstance.display_control = true;
-				$("#find_a_day").slideUp ("slow");
-			}
-		});
 	};
 }]);
 
