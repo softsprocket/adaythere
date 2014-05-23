@@ -35,40 +35,40 @@ from app.lib.components.element import Elements
 from app.lib.components.day_views import DayDisplay, DayPhotoDisplay, DayInfoDisplay
 from app.lib.db.days import Day, DayPhoto
 
-class ToolsHandler(webapp2.RequestHandler):
-    def get(self):
+class ToolsHandler (webapp2.RequestHandler):
+    def get (self):
         """
             Check and see if the user is logged in through
             google. If so set up logged in view else
             setup not logged in view.
         """
 
-        locale = self.request.GET.get('locale', 'en_US')
-        i18n.get_i18n().set_locale(locale)
+        locale = self.request.GET.get ('locale', 'en_US')
+        i18n.get_i18n ().set_locale (locale)
 
-        user = users.get_current_user()
+        user = users.get_current_user ()
 
-        adaythere = ADayThere()
-        adaythere.add_meta_tags([
+        adaythere = ADayThere ()
+        adaythere.add_meta_tags ([
             { "charset":"UTF-8" },
             { "http-equiv":"X-UA-Compatible", "content":"IE=edge" },
             { "name":"description", "content":"A social media site that celebrates the joys of place." },
             { "name":"viewport", "content":"initial-scale=1"}
         ])
 
-        adaythere.add_links([
+        adaythere.add_links ([
             { "rel":"stylesheet", "href":"css/bootstrap.css" },
             { "rel":"stylesheet", "href":"css/adaythere.css" }
         ])
 
 
-        maps = Maps()
+        maps = Maps ()
 
-        adaythere.add_script_tags_for_body([
+        adaythere.add_script_tags_for_body ([
             { "src":"js/jquery-1.11.0-beta2.js" },
             { "src":"js/angular/angular.min.js" },
             { "src":"js/ui-bootstrap-tpls-0.10.0.min.js" },
-            { "src": maps.get_script_src() },
+            { "src": maps.get_script_src () },
             { "src":"js/adaythere.js" }
         ])
 
@@ -76,29 +76,29 @@ class ToolsHandler(webapp2.RequestHandler):
         navView = None
         logged_in = False
         if user is None:
-            navView = LoggedOutNavView()
-            logging.info("user not logged in")
+            navView = LoggedOutNavView ()
+            logging.info ("user not logged in")
         else:
-            logging.info("user nickname: " + str(user.nickname()));
-            logging.info("user email: " + str(user.email()));
-            logging.info("user id: " + str(user.user_id()));
-            logging.info("user federated_identity: " + str(user.federated_identity()));
-            logging.info("user federated_provider: " + str(user.federated_provider()));
-            logging.info("user auth_domain: " + str(user.auth_domain()));
+            logging.info ("user nickname: " + str (user.nickname ()));
+            logging.info ("user email: " + str (user.email ()));
+            logging.info ("user id: " + str (user.user_id ()));
+            logging.info ("user federated_identity: " + str (user.federated_identity ()));
+            logging.info ("user federated_provider: " + str (user.federated_provider ()));
+            logging.info ("user auth_domain: " + str (user.auth_domain ()));
 
-            db_user = User.query_user_id(str(user.user_id()))
+            db_user = User.query_user_id (str (user.user_id ()))
 
             if db_user is None:
-                db_user = User.record_from_google_user(user)
+                db_user = User.record_from_google_user (user)
 
             if db_user.banned:
-                navView = LoggedOutNavView()
+                navView = LoggedOutNavView ()
             else:
-                navView = LoggedInNavView(db_user)
+                navView = LoggedInNavView (db_user)
                 logged_in = True
 
 
-        adminProfileModal = AdminProfileModal()
+        adminProfileModal = AdminProfileModal ()
 
 
         sidebar_display = """
@@ -109,51 +109,51 @@ class ToolsHandler(webapp2.RequestHandler):
                 </li>
         """
 
-        adaythere.open_element("header", {"id":"page_header"})\
-            .open_element("h1", {"id":"page_heading"}, "A Day There")\
-            .close_element("h1")\
-            .open_element("nav")\
-            .append_to_element(navView.get())\
-            .close_element("nav")\
-            .open_element("div")\
-            .append_to_element(adminProfileModal.get())\
-            .close_element("div")\
-            .append_to_element(sidebar_display)\
-            .close_element("header")
+        adaythere.open_element ("header", {"id":"page_header"})\
+            .open_element ("h1", {"id":"page_heading"}, "A Day There")\
+            .close_element ("h1")\
+            .open_element ("nav")\
+            .append_to_element (navView.get ())\
+            .close_element ("nav")\
+            .open_element ("div")\
+            .append_to_element (adminProfileModal.get ())\
+            .close_element ("div")\
+            .append_to_element (sidebar_display)\
+            .close_element ("header")
 
-        adaythere.open_element("section", { "id":"welcome_to_left", "ng-controller":"welcome_controller"})\
-            .append_to_element("""
-                    <button type="button" ng-click="open_welcome_doors()" style="position:absolute;right:0">Click</button>
+        adaythere.open_element ("section", { "id":"welcome_to_left", "ng-controller":"welcome_controller"})\
+            .append_to_element ("""
+                    <button type="button" ng-click="open_welcome_doors ()" style="position:absolute;right:0">Click</button>
                 """)\
-            .close_element("section")
+            .close_element ("section")
 
-        adaythere.open_element("section", { "id":"welcome_to_right", "ng-controller":"welcome_controller" })\
-            .append_to_element("""
-                    <button type="button" ng-click="open_welcome_doors()" style="position:absolute;left:0">Me</button>
+        adaythere.open_element ("section", { "id":"welcome_to_right", "ng-controller":"welcome_controller" })\
+            .append_to_element ("""
+                    <button type="button" ng-click="open_welcome_doors ()" style="position:absolute;left:0">Me</button>
                 """)\
-            .close_element("section")
+            .close_element ("section")
 
-        adaythere.open_element("section", { "id":"find_a_day", "ng-controller":"daysSearchCtrl" })\
-            .append_to_element("""
-                    <button type=button ng-click="become_a_contributor()" style="position:absolute;bottom:0">Get Access To Tools</button>
+        adaythere.open_element ("section", { "id":"find_a_day", "ng-controller":"daysSearchCtrl" })\
+            .append_to_element ("""
+                    <button type=button ng-click="become_a_contributor ()" style="position:absolute;bottom:0">Get Access To Tools</button>
                 """)\
-            .close_element("section")
+            .close_element ("section")
 
-        adaythere.append_to_element(MapTools.map_elements().get())
+        adaythere.append_to_element (MapTools.map_elements ().get ())
 
-        adaythere.open_element("footer", {"id":"page_footer"})\
-            .open_element("p", None, "&copy; 2014 SoftSprocket")\
-            .close_element("p")\
-            .close_element("footer")
+        adaythere.open_element ("footer", {"id":"page_footer"})\
+            .open_element ("p", None, "&copy; 2014 SoftSprocket")\
+            .close_element ("p")\
+            .close_element ("footer")
 
 
-        self.response.write(adaythere.get())
+        self.response.write (adaythere.get ())
 
-class HomeHandler(webapp2.RequestHandler):
-    def get(self):
+class HomeHandler (webapp2.RequestHandler):
+    def get (self):
 
-        adaythere = ADayThere()
-        adaythere.add_meta_tags([
+        adaythere = ADayThere ()
+        adaythere.add_meta_tags ([
             { "charset":"UTF-8" },
             { "http-equiv":"X-UA-Compatible", "content":"yes" },
             { "name":"apple-mobile-web-app-capable", "content":"A social media site that celebrates the joys of place." },
@@ -162,7 +162,7 @@ class HomeHandler(webapp2.RequestHandler):
             { "name":"viewport", "content":"initial-scale=1"}
         ])
 
-        adaythere.add_links([
+        adaythere.add_links ([
             { "rel":"stylesheet", "href":"css/bootstrap.css" },
             { "rel":"stylesheet", "href":"css/flat-ui.css" },
             { "rel":"stylesheet", "href":"css/icon-font.css" },
@@ -171,9 +171,9 @@ class HomeHandler(webapp2.RequestHandler):
         ])
 
 
-        maps = Maps()
+        maps = Maps ()
 
-        adaythere.add_script_tags_for_body([
+        adaythere.add_script_tags_for_body ([
             { "src":"js/jquery-1.11.0-beta2.js" },
             { "src":"js/angular/angular.min.js" },
             { "src":"js/angular/angular-route.min.js" },
@@ -190,11 +190,11 @@ class HomeHandler(webapp2.RequestHandler):
             { "src":"js/jquery.svganim.js" },
             { "src":"js/jquery.parallax.min.js" },
             { "src":"js/startup-kit.js" },
-            { "src": maps.get_script_src() },
+            { "src": maps.get_script_src () },
             { "src":"js/adaythere.js"}
         ])
 
-        adaythere.open_element("div", {"class":"page-wrapper"})
+        adaythere.open_element ("div", {"class":"page-wrapper"})
 
         header_display = """
                     <!-- header -->
@@ -235,13 +235,13 @@ class HomeHandler(webapp2.RequestHandler):
                     </section>
         """
 
-        adaythere.open_element("header", { "id":"page_header" })\
-            .append_to_element(header_display)\
-            .close_element("header")
+        adaythere.open_element ("header", { "id":"page_header" })\
+            .append_to_element (header_display)\
+            .close_element ("header")
 
-        days_display_element = Elements()
-        days_display_element.open_element("div", { "class": "container" })
-        days_display_element.append_to_element("""
+        days_display_element = Elements ()
+        days_display_element.open_element ("div", { "class": "container" })
+        days_display_element.append_to_element ("""
                 <h3>
                     Check out these amazing days that people have created.
                 </h3>
@@ -261,13 +261,13 @@ class HomeHandler(webapp2.RequestHandler):
                 { "bgimage": "images/placeholder/img-5.png", "image": "images/placeholder/img-5.png", "title": "Day 6", "text": "Fine dining, Gardens and historic sites.", "ani_processed": True }
         ]
 
-        random_days = Day.query_random(6)
+        random_days = Day.query_random (6)
 
         
         photo_base_url = "/photos?action=img&title={0}"
-        rdnum = len(random_days) 
+        rdnum = len (random_days) 
 
-        for i in range(0, rdnum):
+        for i in range (0, rdnum):
             item = None
             if (i >= 3):
                 item = days_collection_2[i - 3]
@@ -277,44 +277,44 @@ class HomeHandler(webapp2.RequestHandler):
             day = random_days[i]
             item['title'] = day.title
             item['text'] = day.description
-            if day.photos is not None and (len(day.photos) > 0):
-                purl = photo_base_url.format(day.photos[0].title)
+            if day.photos is not None and (len (day.photos) > 0):
+                purl = photo_base_url.format (day.photos[0].title)
                 item['bgimage'] = purl
                 item['image'] = purl
 
 
-        days_display_element.open_element("div", { "class": "days" })
+        days_display_element.open_element ("div", { "class": "days" })
         for each in days_collection_1:
-            day_display = DayDisplay(each["ani_processed"])
-            photo_display = DayPhotoDisplay(each["bgimage"], each["image"])
-            info_display = DayInfoDisplay(each["title"], each["text"])
-            day_display.append_to_element(photo_display.get())
-            day_display.append_to_element(info_display.get())
+            day_display = DayDisplay (each["ani_processed"])
+            photo_display = DayPhotoDisplay (each["bgimage"], each["image"])
+            info_display = DayInfoDisplay (each["title"], each["text"])
+            day_display.append_to_element (photo_display.get ())
+            day_display.append_to_element (info_display.get ())
 
-            days_display_element.append_to_element(day_display.get())
+            days_display_element.append_to_element (day_display.get ())
 
-        days_display_element.close_element("div")
+        days_display_element.close_element ("div")
 
-        days_display_element.open_element("div", { "class": "days" })
+        days_display_element.open_element ("div", { "class": "days" })
         for each in days_collection_2:
-            day_display = DayDisplay(each["ani_processed"])
-            photo_display = DayPhotoDisplay(each["bgimage"], each["image"])
-            info_display = DayInfoDisplay(each["title"], each["text"])
-            day_display.append_to_element(photo_display.get())
-            day_display.append_to_element(info_display.get())
+            day_display = DayDisplay (each["ani_processed"])
+            photo_display = DayPhotoDisplay (each["bgimage"], each["image"])
+            info_display = DayInfoDisplay (each["title"], each["text"])
+            day_display.append_to_element (photo_display.get ())
+            day_display.append_to_element (info_display.get ())
 
-            days_display_element.append_to_element(day_display.get())
+            days_display_element.append_to_element (day_display.get ())
 
-        days_display_element.close_element("div")
+        days_display_element.close_element ("div")
 
-        days_display_element.close_element("div")
+        days_display_element.close_element ("div")
 
-        days_display =  days_display_element.get()
+        days_display =  days_display_element.get ()
 
 
-        adaythere.open_element("section", {"id":"day_search", "class": "day-search"})\
-            .append_to_element(days_display)\
-            .close_element("section")
+        adaythere.open_element ("section", {"id":"day_search", "class": "day-search"})\
+            .append_to_element (days_display)\
+            .close_element ("section")
 
         about_display = """
             <div id="pt-2" class="page-transitions pt-perspective">
@@ -376,9 +376,9 @@ class HomeHandler(webapp2.RequestHandler):
             </div>
         """
 
-        adaythere.open_element("section", {"id":"about", "class":"about-sections"})\
-            .append_to_element(about_display)\
-            .close_element("section")
+        adaythere.open_element ("section", {"id":"about", "class":"about-sections"})\
+            .append_to_element (about_display)\
+            .close_element ("section")
 
         contact_display = """
             <div class="container">
@@ -416,9 +416,9 @@ class HomeHandler(webapp2.RequestHandler):
             </div>
         """
 
-        adaythere.open_element("section", {"id":"contact", "class":"contacts"})\
-            .append_to_element(contact_display)\
-            .close_element("section")
+        adaythere.open_element ("section", {"id":"contact", "class":"contacts"})\
+            .append_to_element (contact_display)\
+            .close_element ("section")
 
         footer_display = """
             <div class="container">
@@ -445,79 +445,79 @@ class HomeHandler(webapp2.RequestHandler):
             </div>
         """
 
-        adaythere.open_element("footer", {"id":"page_footer", "class":"footer"})\
-            .append_to_element(footer_display)\
-            .close_element("footer")
+        adaythere.open_element ("footer", {"id":"page_footer", "class":"footer"})\
+            .append_to_element (footer_display)\
+            .close_element ("footer")
 
-        adaythere.close_element("div")
+        adaythere.close_element ("div")
 
-        self.response.write(adaythere.get())
+        self.response.write (adaythere.get ())
 
-class MapTools():
+class MapTools ():
 
     @classmethod
     def map_elements (cls):
         logged_in = True
         element = Elements ()
-        element.open_element("section", {"id":"map_section"})\
-            .close_element("section")
+        element.open_element ("section", {"id":"map_section"})\
+            .close_element ("section")
 
-        sidebarHeaderView = SidebarHeaderView()
-        mapSearchView = MapSearchView(logged_in)
-        placesSearchView = PlacesSearchView(logged_in)
-        markersView = MarkersView(logged_in)
-        createADayView = CreateADayView(logged_in)
-        myDaysView = MyDaysView(logged_in)
+        sidebarHeaderView = SidebarHeaderView ()
+        mapSearchView = MapSearchView (logged_in)
+        placesSearchView = PlacesSearchView (logged_in)
+        markersView = MarkersView (logged_in)
+        createADayView = CreateADayView (logged_in)
+        myDaysView = MyDaysView (logged_in)
 
-        profileModal = ProfileModal()
-        markerModal = MarkerModal()
-        selectDayModal = SelectDayModal()
-        addPhotosModal = AddPhotosModal()
+        profileModal = ProfileModal ()
+        markerModal = MarkerModal ()
+        selectDayModal = SelectDayModal ()
+        addPhotosModal = AddPhotosModal ()
 
-        element.open_element("section", {"id":"sidebar_section", "ng-controller":"sidebarCtrl"})\
-            .open_element("header", {"id":"sidebar_heading"})\
-            .append_to_element(sidebarHeaderView.get())\
-            .close_element("header")\
-            .append_to_element("<hr></hr>")\
-            .open_element("tabset", {"justified":"false"})\
-            .open_element("tab", {"heading":"Map Tools"})\
-            .open_element("accordion", {"close-others":"true"})\
-            .open_element("accordion-group",{"heading":"Location"})\
-            .append_to_element(mapSearchView.get())\
-            .close_element("accordion-group")\
-            .open_element("accordion-group", {"heading":"Places"})\
-            .append_to_element(placesSearchView.get())\
-            .close_element("accordion-group")\
-            .open_element("accordion-group", {"heading":"Markers"})\
-            .append_to_element(markersView.get())\
-            .close_element("accordion-group")\
-            .close_element("accordion")\
-            .close_element("tab")\
-            .open_element("tab", {"heading":"Create Day"})\
-            .append_to_element(createADayView.get())\
-            .close_element("tab")\
-            .open_element("tab", {"active":"find_a_day.active", "heading":"My Days"})\
-            .append_to_element(myDaysView.get())\
-            .close_element("tab")\
-            .close_element("tabset")\
-            .open_element("div", {"ng-controller":"profileCtrl"})\
-            .append_to_element(profileModal.get())\
-            .close_element("div")\
-            .open_element("div")\
-            .append_to_element(markerModal.get())\
-            .close_element("div")\
-            .open_element("div")\
-            .append_to_element(selectDayModal.get())\
-            .close_element("div")\
-            .open_element("div")\
-            .append_to_element(addPhotosModal.get())\
-            .close_element("div")\
-            .close_element("section")
+        element.open_element ("section", {"id":"sidebar_section", "ng-controller":"sidebarCtrl"})\
+            .open_element ("header", {"id":"sidebar_heading"})\
+            .append_to_element (sidebarHeaderView.get ())\
+            .close_element ("header")\
+            .append_to_element ("<hr></hr>")\
+            .open_element ("tabset", {"justified":"false"})\
+            .open_element ("tab", {"heading":"Map Tools"})\
+            .open_element ("accordion", {"close-others":"true"})\
+            .open_element ("accordion-group",{"heading":"Location"})\
+            .append_to_element (mapSearchView.get ())\
+            .close_element ("accordion-group")\
+            .open_element ("accordion-group", {"heading":"Places"})\
+            .append_to_element (placesSearchView.get ())\
+            .close_element ("accordion-group")\
+            .open_element ("accordion-group", {"heading":"Markers"})\
+            .append_to_element (markersView.get ())\
+            .close_element ("accordion-group")\
+            .close_element ("accordion")\
+            .close_element ("tab")\
+            .open_element ("tab", {"heading":"Create Day"})\
+            .append_to_element (createADayView.get ())\
+            .close_element ("tab")\
+            .open_element ("tab", {"active":"find_a_day.active", "heading":"My Days"})\
+            .append_to_element (myDaysView.get ())\
+            .close_element ("tab")\
+            .close_element ("tabset")\
+            .open_element ("div", {"ng-controller":"profileCtrl"})\
+            .append_to_element (profileModal.get ())\
+            .close_element ("div")\
+            .open_element ("div")\
+            .append_to_element (markerModal.get ())\
+            .close_element ("div")\
+            .open_element ("div")\
+            .append_to_element (selectDayModal.get ())\
+            .close_element ("div")\
+            .open_element ("div")\
+            .append_to_element (addPhotosModal.get ())\
+            .close_element ("div")\
+            .close_element ("section")
         return element
 
 
 
-app = webapp2.WSGIApplication([
+app = webapp2.WSGIApplication ([
     ('/', ToolsHandler),
     ('/tools', ToolsHandler),
     ('/home', HomeHandler),
