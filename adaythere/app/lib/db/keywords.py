@@ -7,9 +7,10 @@ class Keywords (ndb.Model):
 
     @classmethod
     def add_if_missing (cls, keyword):
-        keywords = cls.query ().fetch ()
+        keyword = keyword.strip ()
+        word = cls.query (cls.keyword == keyword ).get ()
 
-        if keyword in keywords:
+        if word is not None:
             return
 
         kw = Keywords ()

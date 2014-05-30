@@ -33,5 +33,6 @@ class Elements (object):
         return self
 
     def get (self):
-        return self.elements;
+
+        return self.elements
 

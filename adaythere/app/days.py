@@ -23,8 +23,6 @@ class DayHandler (webapp2.RequestHandler):
 
         data = json.loads (self.request.body)
 
-        print (data)
-
         day = Day ()
         day.userid = db_user.user_id
         day.locality = data['locality']
@@ -109,6 +107,8 @@ class DayHandler (webapp2.RequestHandler):
 
         day = Day.query_user_title (db_user.user_id, data['title']).get ()
 
+        KeywordsDayList.delete_keywords (day)
+        
         day.locality = data['locality']
         day.title = data['title']
         day.description = data['description']
@@ -167,7 +167,7 @@ class DayHandler (webapp2.RequestHandler):
         day = Day.query_user_title (db_user.user_id, title).get ()
 
         for photo in day.photos:
-            photo_query = Photos.query_photo (db_user.user_id, photo)
+            photo_query = Photos.query_photo (db_user.user_id, photo.title)
             pq = photo_query.get ()
             try:
                 index = pq.index (day.title)
@@ -175,7 +175,12 @@ class DayHandler (webapp2.RequestHandler):
             except:
                 pass
 
+            pq.key.delete ()
+
+
         day.key.delete ()
+        
+        KeywordsDayList.delete_keywords (day)
 
         self.response.status = 200
 

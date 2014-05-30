@@ -34,6 +34,7 @@ from app.lib.components.genmodal import Modal, ProfileModal, MarkerModal, Select
 from app.lib.components.element import Elements
 from app.lib.components.day_views import DayDisplay, DayPhotoDisplay, DayInfoDisplay
 from app.lib.db.days import Day, DayPhoto
+from app.lib.components.day_search import DaySearch
 
 class ToolsHandler (webapp2.RequestHandler):
     def get (self):
@@ -109,42 +110,47 @@ class ToolsHandler (webapp2.RequestHandler):
                 </li>
         """
 
-        adaythere.open_element ("header", {"id":"page_header"})\
-            .open_element ("h1", {"id":"page_heading"}, "A Day There")\
-            .close_element ("h1")\
-            .open_element ("nav")\
-            .append_to_element (navView.get ())\
-            .close_element ("nav")\
-            .open_element ("div")\
-            .append_to_element (adminProfileModal.get ())\
-            .close_element ("div")\
-            .append_to_element (sidebar_display)\
-            .close_element ("header")
+        adaythere.open_element ("header", {"id":"page_header"})
+        adaythere.open_element ("h1", {"id":"page_heading"}, "A Day There")
+        adaythere.close_element ("h1")
+        adaythere.open_element ("nav")
+        adaythere.append_to_element (navView.get ())
+        adaythere.close_element ("nav")
+        adaythere.open_element ("div")
+        adaythere.append_to_element (adminProfileModal.get ())
+        adaythere.close_element ("div")
+        adaythere.append_to_element (sidebar_display)
+        adaythere.close_element ("header")
 
-        adaythere.open_element ("section", { "id":"welcome_to_left", "ng-controller":"welcome_controller"})\
-            .append_to_element ("""
+        adaythere.open_element ("section", { "id":"welcome_to_left", "ng-controller":"welcome_controller"})
+        adaythere.append_to_element ("""
                     <button type="button" ng-click="open_welcome_doors ()" style="position:absolute;right:0">Click</button>
-                """)\
-            .close_element ("section")
+                """)
+        adaythere.close_element ("section")
 
-        adaythere.open_element ("section", { "id":"welcome_to_right", "ng-controller":"welcome_controller" })\
-            .append_to_element ("""
+        adaythere.open_element ("section", { "id":"welcome_to_right", "ng-controller":"welcome_controller" })
+        adaythere.append_to_element ("""
                     <button type="button" ng-click="open_welcome_doors ()" style="position:absolute;left:0">Me</button>
-                """)\
-            .close_element ("section")
+                """)
+        adaythere.close_element ("section")
 
-        adaythere.open_element ("section", { "id":"find_a_day", "ng-controller":"daysSearchCtrl" })\
-            .append_to_element ("""
+        adaythere.open_element ("section", { "id":"find_a_day", "ng-controller":"daysSearchCtrl" })
+
+        day_search = DaySearch ()
+        search_form = day_search.get ()
+        adaythere.append_to_element (search_form)
+
+        adaythere.append_to_element ("""
                     <button type=button ng-click="become_a_contributor ()" style="position:absolute;bottom:0">Get Access To Tools</button>
-                """)\
-            .close_element ("section")
+                """)
+        adaythere.close_element ("section")
 
         adaythere.append_to_element (MapTools.map_elements ().get ())
 
-        adaythere.open_element ("footer", {"id":"page_footer"})\
-            .open_element ("p", None, "&copy; 2014 SoftSprocket")\
-            .close_element ("p")\
-            .close_element ("footer")
+        adaythere.open_element ("footer", {"id":"page_footer"})
+        adaythere.open_element ("p", None, "&copy; 2014 SoftSprocket")
+        adaythere.close_element ("p")
+        adaythere.close_element ("footer")
 
 
         self.response.write (adaythere.get ())
