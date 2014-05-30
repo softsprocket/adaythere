@@ -955,6 +955,7 @@ ADT_PhotoService.prototype.getCurrentCount = function () {
 		deferred.resolve (this.current_count);
 	} else {
 		this.$http.get ("/photos?action=count").success (function (data, status, headers, config) {
+			current_count = data.coount;
 			deferred.resolve (data.count);
 
 		}).error (function (data, status, headers, config) {
@@ -1032,8 +1033,6 @@ ADT_PhotoService.prototype.deleteTitles = function (titles, used_by) {
 	}
 
 	self = this;
-
-	console.log ("deleteTitles", titles);
 
 	this.$http.delete (qstr).success (function () {
 		deferred.resolve ();
@@ -1776,6 +1775,8 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "$compile",
 
 			$scope.creation_clear ();
 			$scope.find_a_day.active = true;
+
+			$scope.tmp_photo_storage.saved = true;
 		}
 
 	};
@@ -1925,8 +1926,12 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "$compile",
 		day.hide_markers ();		
 	};
 
-	$scope.creation_clear = function (delete_photos) {
+	$scope.tmp_photo_storage = {
+		saved: true
+	};
 
+	$scope.creation_clear = function (delete_photos) {
+		
 		if (delete_photos) {
 			var titles = [];
 			for (var i = 0; i < $scope.current_created_day.photos.length; ++i) {
@@ -1934,6 +1939,10 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "$compile",
 			}
 
 			photoService.deleteTitles (titles);
+
+			$scope.photo_storage.count = $scope.tmp_photo_storage.count;
+			$scope.photo_storage.total_allowed = $scope.tmp_photo_storage.total_allowed;
+			 
 		}
 
 		$scope.current_created_day.clear ();
@@ -1942,15 +1951,18 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "$compile",
 
 	$scope.photo_storage = {
 		count: photoService.current_count,
-		total_allowed: photoService.total_allowed_photos,
-		available_files: photoService.title_list
+		total_allowed: photoService.total_allowed_photos
 	};
 
-	$scope.open_add_photo_modal = function () {
 
-		$scope.photo_storage.count = photoService.current_count;
-		$scope.available_fles = photoService.title_list;
+	$scope.open_add_photo_modal = function () {
 		
+		if ($scope.tmp_photo_storage.saved) {
+			$scope.tmp_photo_storage.count = $scope.photo_storage.count;
+			$scope.tmp_photo_storage.total_allowed = $scope.photo_storage.total_allowed;
+			$scope.tmp_photo_storage.saved = false;
+		}
+
 		var modalInstance = $modal.open ({
 			templateUrl: 'addPhotosModalContent.html',
 	    		controller: adaythere.AddPhotosModalInstanceCtrl,
