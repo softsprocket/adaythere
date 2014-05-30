@@ -6,6 +6,8 @@ from google.appengine.ext import ndb
 from app.lib.db.location import Location
 import random
 from app.lib.db.keywords import Keywords 
+import itertools
+import hashlib
 
 class Place (ndb.Model):
     location = ndb.StructuredProperty (Location)
@@ -64,13 +66,13 @@ class Day (ndb.Model):
         return rv
 
     @classmethod
-    def query_days (cls, **kwargs):
+    def query_days (cls, args):
 
-        locality = kwargs.get ('locality')
-        minimum_rating = kwargs.get ('minimum_rating')
-        user_id = kwargs.get ('user_id')
-        cursor = kwargs.get ('cursor')
-        limit = kwargs.get ('limit')
+        locality = args.get ('locality')
+        minimum_rating = args.get ('minimum_rating')
+        user_id = args.get ('user_id')
+        cursor = args.get ('cursor')
+        limit = args.get ('limit')
 
         if limit is None:
             limit = 20
@@ -86,8 +88,6 @@ class Day (ndb.Model):
         
         query = cls.query (filters)
 
-        res = None
-
         if cursor is not None:
             res = query.fetch_page (limit, start_cursor = cursor)
         else:
@@ -97,30 +97,60 @@ class Day (ndb.Model):
 
             
     @classmethod
-    def query_keyword_days (cls, keyhash, **kwargs):
+    def query_keyword_days (cls, keyhash, args):
 
-        locality = kwargs.get ('locality')
-        minimum_rating = kwargs.get ('minimum_rating')
-        user_id = kwargs.get ('user_id')
-        cursor = kwargs.get ('cursor')
-        limit = kwargs.get ('limit')
+        locality = args.get ('locality', None)
+        minimum_rating = args.get ('minimum_rating', None)
+        user_id = args.get ('user_id', None)
+        cursor = args.get ('cursor', None)
+        limit = args.get ('limit', None)
         
         if locality is None:
-            return None
+            return ([], None, False)
 
         kdl_query = KeywordsDayList.query_keyhash (keyhash, locality)
 
-        kdl_query_iter = kdl_query.iter (produce_cursors=True, start_cursor=cursor)
-        for key in kdl_query_iter:
-            day = key.get ()
+        kdl_query_iter = None
 
+        if cursor is not None:
+            kdl_query_iter = kdl_query.iter (produce_cursors=True, start_cursor=cursor)
+        else:
+            kdl_query_iter = kdl_query.iter (produce_cursors=True)
+
+        added = 0
+        days = []
+        for keywords in kdl_query_iter:
+            for key in keywords.days:
+            
+                found_day = key.get ()
+
+                if user_id is not None and day.user_id != user_id:
+                    continue
+
+                if minimum_rating is not None and day.averageReview < minimum_rating:
+                    continue
+
+                days.append (found_day)
+                added += 1
+
+                if added == limit:
+                    break
+
+        if kdl_query_iter.has_next ():
+            cursor = kdl_query_iter.cursor_after ()
+            more = True
+        else:
+            cursor = None
+            more = False
+
+        return (days, cursor, more)
 
 
 
 
 class KeywordsDayList (ndb.Model):
 
-    keyhash = ndb.IntegerProperty ()
+    keyhash = ndb.StringProperty ()
     days = ndb.KeyProperty (kind=Day, repeated=True)
     locality = ndb.StringProperty ()
 
@@ -131,18 +161,19 @@ class KeywordsDayList (ndb.Model):
     @classmethod
     def add_keywords (cls, day):
 
-        a=list (day.keywords)
-        b=list (day.keywords)
-        b.pop (0)
+        stripped_list = map (lambda x: x.strip (), day.keywords)
 
-        keys_tuple = (a, b)
+        list_len = len (stripped_list)
 
-        from_front = True
-        for keywords in keys_tuple:
-            while keywords:
-                keyhash = hash (str (sorted (keywords)))
+        for i in range (0, list_len):
+            comb = itertools.combinations (stripped_list, i + 1)
+            for ea in comb:
+                word_list = sorted (map (lambda x: x.strip (), ea))
+                keyhash = hashlib.sha256(str(word_list)).hexdigest()
                 kq = KeywordsDayList ().query_keyhash (keyhash, day.locality)
                 kdl = kq.get ()
+
+                print "Adding keyhash:", keyhash, word_list 
 
                 if kdl is None:
                     daylist = KeywordsDayList () 
@@ -156,26 +187,20 @@ class KeywordsDayList (ndb.Model):
                     kdl.days.append (day.key)
                     kdl.put ()
 
-                    if from_front:
-                        keywords.pop (0)
-                    else:
-                        keywords.pop ()
-
-            from_front = False
             
     @classmethod
     def delete_keywords (cls, day):
 
-        a=list (day.keywords)
-        b=list (day.keywords)
-        b.pop (0)
+        stripped_list = map (lambda x: x.strip (), day.keywords)
 
-        keys_tuple = (a, b)
+        list_len = len (stripped_list)
 
-        from_front = True
-        for keywords in keys_tuple:
-            while keywords:
-                keyhash = hash (str (sorted (keywords)))
+        for i in range (0, list_len):
+            comb = itertools.combinations (stripped_list, i + 1)
+            for ea in comb:
+                word_list = sorted (map (lambda x: x.strip (), ea))
+                keyhash = hashlib.sha256(str(word_list)).hexdigest()
+                
                 kq = KeywordsDayList ().query_keyhash (keyhash, day.locality)
                 kdl = kq.get ()
 
@@ -184,11 +209,5 @@ class KeywordsDayList (ndb.Model):
                         kdl.days.remove (day.key)
                         kdl.put ()
 
-                if from_front:
-                    keywords.pop (0)
-                else:
-                    keywords.pop ()
-
-            from_front = False
 
 

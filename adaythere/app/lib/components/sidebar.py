@@ -134,7 +134,7 @@ class CreateADayView:
                     </div>
                 </fieldset>
                 <button id="creation_save_button" type="button" ng-click="creation_save ()">Save</button>
-                <button id="creation_clear_button" type="button" ng-click="creation_clear ()">Clear</button>
+                <button id="creation_clear_button" type="button" ng-click="creation_clear (true)">Clear</button>
                 <button id="creation_photo_button" type="button" ng-click="open_add_photo_modal ()">Add photos</button>
             </fieldset>
             """

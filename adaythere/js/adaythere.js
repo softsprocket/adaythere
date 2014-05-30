@@ -843,6 +843,7 @@ ADT_UserDaysService.prototype.updateDay = function (updated_day) {
 };
 
 ADT_UserDaysService.prototype.deleteDay = function (deleted_day) {
+	var deferred = this.$q.defer ();
 	var day = ADT_CreatedDay.copy (deleted_day);
 	var self = this;
 	this.$http.delete ("/days", { params: { title: day.title }}).success (function (data, status, headers, config) {
@@ -854,11 +855,15 @@ ADT_UserDaysService.prototype.deleteDay = function (deleted_day) {
 				self.deleted_days.push (deleted_day);
 				break;
 			}
-		}	
+		}
+
+		deferred.resolve ();	
 	}).error (function (data, status, headers, config) {
 		console.error (status, data);
+		deferred.reject ();
 	});
-
+	
+	return deferred.promise;
 };
 
 ADT_UserDaysService.prototype.removeDeletedDay = function (deleted_day) {
@@ -883,20 +888,15 @@ adaythere.factory ("userDaysService", ["$http", "$q", function ($http, $q) {
 function ADT_LocalityDaysService ($http, $q) {
 	this.$http = $http;
 	this.$q = $q;
-
+	this.keywords = []
 }
 
-ADT_LocalityDaysService.prototype.getDays = function (locality, limit, cursor, keywords) {
+ADT_LocalityDaysService.prototype.getDays = function (params) {
 	var deferred = this.$q.defer ();
 	var self = this;
 
 	var config = {
-		params : {
-			locality: locality,
-			limit: limit,
-			cursor: cursor,
-			keywords: keywords
-		}
+		params : params
 	};
 
 	this.$http.get ("/locality_days", config).success (function (data, status, headers, config) {
@@ -906,6 +906,26 @@ ADT_LocalityDaysService.prototype.getDays = function (locality, limit, cursor, k
 		deferred.reject ();
 	});
 
+
+	return deferred.promise;
+};
+
+ADT_LocalityDaysService.prototype.getKeywords = function () {
+	var deferred = this.$q.defer ();
+	var self = this;
+
+	this.$http.get ("/keywords").success (function (data, status, headers, config) {
+		self.keywords = [];
+		for (var i = 0; i < data.length; ++i) { 
+			self.keywords.push (data[i])
+		}
+
+		deferred.resolve (data)
+
+	}).error (function (data, status, headers, config) {
+		console.error (status, data);
+		deferred.reject ();
+	});
 
 	return deferred.promise;
 };
@@ -973,8 +993,6 @@ ADT_PhotoService.prototype.upload = function (photos) {
 }
 
 ADT_PhotoService.prototype.getTitles = function () {
-
-
 	var deferred = this.$q.defer ();
 	var self = this;
 
@@ -994,6 +1012,35 @@ ADT_PhotoService.prototype.getTitles = function () {
 			deferred.reject ();
 		});
 	}
+
+	return deferred.promise;
+}
+
+ADT_PhotoService.prototype.deleteTitles = function (titles, used_by) {
+	var deferred = this.$q.defer ();
+	var qstr = "/photos?titles=";
+	var sep = "";
+	for (var i= 0; i < titles.length; ++i) {
+		qstr += sep;
+		qstr += titles[i];
+		sep = ",";
+	}
+
+	if (used_by) {
+		qstr += "&used_by=";
+		qstr += used_by
+	}
+
+	self = this;
+
+	console.log ("deleteTitles", titles);
+
+	this.$http.delete (qstr).success (function () {
+		deferred.resolve ();
+	}).error (function (data, status, headers, config) {
+		console.error (status, data);
+		deferred.reject ();
+	});
 
 	return deferred.promise;
 }
@@ -1103,10 +1150,30 @@ adaythere.controller ("daysSearchCtrl", ["$scope", "localityDaysService", "profi
 		});
 	};
 
-	$scope.getLocalityDays = function (locality, limit, cursor, keywords) {
-		localityDaysService.getDays (locality, limit, cursor, keywords).then (function (data) {
-			
+	$scope.daysearch_selected_keywords = [];
+	$scope.daysearch_keywords = localityDaysService.keywords;
+	$scope.daysearch_locality = ""
+
+	localityDaysService.getKeywords ().then (function () {
+		$scope.daysearch_keywords = localityDaysService.keywords;
+	});
+
+	$scope.getLocalityDays = function (params) {
+		localityDaysService.getDays (params).then (function (data) {
+			console.log ("LOCALITY DAYS *****************>", data);	
 		});	
+	};
+
+	$scope.executeSearch = function () {
+		var keywords = "";
+		var len = $scope.daysearch_selected_keywords.length;
+		for (var i = 0; i < len; ++i) {
+			var sep = (i + 1) == len ? "" : ","
+			keywords = keywords + $scope.daysearch_selected_keywords[i]  + sep;
+		}
+
+
+		$scope.getLocalityDays ({ keywords: keywords, locality: $scope.daysearch_locality });
 	};
 }]);
 
@@ -1361,8 +1428,8 @@ adaythere.controller ("sidebarDisplayCtrl", ["$scope", "googleMapService", funct
 }]);
 
 adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "$compile", 
-		"googleMapService", "profileService", "userDaysService", "photoService",
-		function ($scope, $modal, $http, $compile, googleMapService, profileService, userDaysService, photoService) {
+		"googleMapService", "profileService", "userDaysService", "photoService", "localityDaysService",
+		function ($scope, $modal, $http, $compile, googleMapService, profileService, userDaysService, photoService, localityDaysService) {
 
 	$scope.location = googleMapService.location;
 	$scope.clicked = googleMapService.clicked;
@@ -1858,7 +1925,17 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "$compile",
 		day.hide_markers ();		
 	};
 
-	$scope.creation_clear = function () {
+	$scope.creation_clear = function (delete_photos) {
+
+		if (delete_photos) {
+			var titles = [];
+			for (var i = 0; i < $scope.current_created_day.photos.length; ++i) {
+				titles.push ($scope.current_created_day.photos[i].title);
+			}
+
+			photoService.deleteTitles (titles);
+		}
+
 		$scope.current_created_day.clear ();
 		$scope.creation_alerts = [];
 	};
@@ -1883,14 +1960,15 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "$compile",
 		});
 
 		modalInstance.result.then (function (selections) {
-			
-			for (var each in selections) {
-				if (selections.hasOwnProperty (each)) {
-					var photo = new ADT_DayPhoto ();
-					photo.title = selections[each].title;
-					photo.description = "";
-					$scope.current_created_day.photos.push (photo);
-				}
+			if (!selections) {
+				return;
+			}
+
+			for (var i = 0; i <  selections.length; ++i) {
+				var photo = new ADT_DayPhoto ();
+				photo.title = selections[i];
+				photo.description = "";
+				$scope.current_created_day.photos.push (photo);
 			}
 
 		}, function () {
@@ -2003,7 +2081,9 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "$compile",
 		var rv = window.confirm ("Delete day " + day.title + "?");
 
 		if (rv) {
-			userDaysService.deleteDay (day);
+			userDaysService.deleteDay (day).then (function () {
+				//localityDaysService.getKeywords ();
+			});
 		}
 	};
 }]);
@@ -2018,9 +2098,16 @@ adaythere.controller ("welcome_controller", ["$scope", function ($scope) {
 
 adaythere.AddPhotosModalInstanceCtrl = function ($scope, $modalInstance, $compile, photoService) {
 
-	$scope.collapsed = {}
+	$scope.collapsed = {};
+	$scope.selections = {};
 
 	var list = null;
+
+	$scope.open_file_selection = function () {
+		setTimeout(function() {
+			$("#open_file_selection").click ();
+		}, 0);		
+	}
 
 	$scope.file_selection = function (element) {
 		var files = element.files;
@@ -2028,15 +2115,7 @@ adaythere.AddPhotosModalInstanceCtrl = function ($scope, $modalInstance, $compil
 
 		var length = files.length > available_count ? available_count : files.length;
 
-		var compiled_buttons = $compile (
-			"<input type=button ng-click='upload_checked_photos ()' value='Upload Selected' class='btn btn-primary' />"
-			+ "<input type=button ng-click='remove_checked_photos ()' value='Remove Selected' class='btn btn-primary'/>"
-			+ "<input type=button ng-click='toggle_selection ()' value='Toggle Selection' class='btn btn-primary' />"
-		)($scope);
-		
 		if (length > 0 && list == null) {
-			$("#pic_loader_div").append (compiled_buttons);
-
 			list = $("<ul></ul>");			
 			$("#pic_loader_div").append (list);
 		}
@@ -2077,7 +2156,7 @@ adaythere.AddPhotosModalInstanceCtrl = function ($scope, $modalInstance, $compil
 	$scope.upload_checked_photos = function () {
 		var items = $("#pic_loader_div").children ("ul").children ("li");
 		var selected_for_upload = [];
-
+		var selections = []
 		for (var i = 0; i < items.length; ++i) {
 			var li = $(items[i]);
 			var checkbox = $(li.children ('.pic_loader_action_checkbox')[0]);
@@ -2088,13 +2167,14 @@ adaythere.AddPhotosModalInstanceCtrl = function ($scope, $modalInstance, $compil
 			for (var j = 0; j < photoService.title_list.length; ++j) {
 				if (photoService.title_list[j] == title) {
 					title_exists = true;
-					break
+					break;
 				}
 			}
 
 			if (title == "" || title_exists) {
 				continue;				
 			}
+
 
 
 			if (checkbox.is (':checked')) {
@@ -2111,15 +2191,17 @@ adaythere.AddPhotosModalInstanceCtrl = function ($scope, $modalInstance, $compil
 
 				selected_for_upload.push (storage_obj);
 				li.remove ();
+
+				selections.push (title);
 			}
 
 		}
 
 		photoService.upload (selected_for_upload).then (function () {
-
- 			$scope.photo_storage.count = photoService.current_count,
-              		$scope.photo_storage.total_allowed = photoService.total_allowed_photos,
-               		$scope.photo_storage.available_files = photoService.title_list
+ 			$scope.photo_storage.count = photoService.current_count;
+              		$scope.photo_storage.total_allowed = photoService.total_allowed_photos;
+               		$scope.photo_storage.available_files = photoService.title_list;
+			$modalInstance.close (selections);
 			
 		});
 	};
@@ -2138,48 +2220,7 @@ adaythere.AddPhotosModalInstanceCtrl = function ($scope, $modalInstance, $compil
 		}
 
 	};
-
-	$scope.toggle_selection = function () {
-		
-		var items = $("#pic_loader_div").children ("ul").children ("li");
-
-		for (var i = 0; i < items.length; ++i) {
-			var li = $(items[i]);
-			var checkbox = $(li.children ('.pic_loader_action_checkbox')[0]);
-			checkbox.each (function () { this.checked = !this.checked; });
-		}
-	}	
-
-	$scope.display_pic = function (stored_pic) {
-		if (typeof $scope.collapsed[stored_pic] != 'undefined') {
-			$scope.collapsed[stored_pic] = !$scope.collapsed[stored_pic];
-			return;
-		}
-
-		var image = new Image ();
-		image.src = "/photos?action=img&title=" + stored_pic;
-		$("#" + stored_pic).append (image);
-
-		$scope.collapsed[stored_pic] = false;
-	};
-
-	$scope.is_collapsed = function (stored_pic) {
-		return typeof $scope.collapsed[stored_pic] == 'undefined' ? true : $scope.collapsed[stored_pic];
-	}	
-
-	var selections = {};
-	$scope.stored_pics_selection_changed = function (stored_pic, confirmed) {
-		if (confirmed) {
-			selections[stored_pic.title] = stored_pic;	
-		} else {
-			delete selections[stored_pic.title];
-		}
-	};
-
-	$scope.addphotos_modal_add_to_day = function () {
-		$modalInstance.close (selections);
-	};
-
+	
 	$scope.addphotos_modal_close = function () {
 		$modalInstance.close ();
 	};
