@@ -1151,7 +1151,9 @@ adaythere.controller ("daysSearchCtrl", ["$scope", "localityDaysService", "profi
 
 	$scope.daysearch_selected_keywords = [];
 	$scope.daysearch_keywords = localityDaysService.keywords;
-	$scope.daysearch_locality = ""
+	$scope.daysearch_locality = "";
+	$scope.daysearch_words = "";
+	$scope.daysearch_all_words = false;
 
 	localityDaysService.getKeywords ().then (function () {
 		$scope.daysearch_keywords = localityDaysService.keywords;
@@ -1171,8 +1173,24 @@ adaythere.controller ("daysSearchCtrl", ["$scope", "localityDaysService", "profi
 			keywords = keywords + $scope.daysearch_selected_keywords[i]  + sep;
 		}
 
+		args = {}
+		if (keywords != "") {
+			args.keywords = keywords;
+		}
 
-		$scope.getLocalityDays ({ keywords: keywords, locality: $scope.daysearch_locality });
+		if ($scope.daysearch_words != "") {
+			args.words = $scope.daysearch_words;
+		}
+
+		if ($scope.daysearch_locality != "") {
+			args.locality = $scope.daysearch_locality
+		}
+	
+		args.all_words =  $scope.daysearch_all_words;
+
+		console.log (args)
+
+		$scope.getLocalityDays (args);
 	};
 }]);
 

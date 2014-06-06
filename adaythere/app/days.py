@@ -11,6 +11,7 @@ from app.lib.db.photos import Photos
 from app.adaythere import ADayThere
 from app.lib.db.keywords import Keywords
 from app.lib.db.days import KeywordsDayList
+from app.lib.db.words import Words
 
 class DayHandler (webapp2.RequestHandler):
 
@@ -73,6 +74,8 @@ class DayHandler (webapp2.RequestHandler):
         day.put ()
 
         KeywordsDayList.add_keywords (day)
+
+        Words.add_words (day.title, day.description, day.key, day.locality)
 
         self.response.status = 200
 
@@ -153,6 +156,8 @@ class DayHandler (webapp2.RequestHandler):
 
         KeywordsDayList.add_keywords (day)
 
+        Words.update_words (day.title, day.description, day.key, day.locality)
+
         self.response.status = 200
 
 
@@ -181,6 +186,8 @@ class DayHandler (webapp2.RequestHandler):
         day.key.delete ()
         
         KeywordsDayList.delete_keywords (day)
+
+        Words.delete_words (day.key)
 
         self.response.status = 200
 

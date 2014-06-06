@@ -6,6 +6,7 @@ from google.appengine.ext import ndb
 from app.lib.db.location import Location
 import random
 from app.lib.db.keywords import Keywords 
+from app.lib.db.words import Words
 import itertools
 import hashlib
 
@@ -68,15 +69,19 @@ class Day (ndb.Model):
     @classmethod
     def query_days (cls, args):
 
-        locality = args.get ('locality')
-        minimum_rating = args.get ('minimum_rating')
-        user_id = args.get ('user_id')
-        cursor = args.get ('cursor')
-        limit = args.get ('limit')
+        cursor = args.get ('cursor', None)
+        locality = args.get ('locality', None)
+        minimum_rating = args.get ('minimum_rating', None)
+        user_id = args.get ('user_id', None)
+        limit = args.get ('limit', None)
+
+        if cursor is None and locality is None:
+            return ([], None, False)
 
         if limit is None:
             limit = 20
 
+        res = (None, None, False)
         filters = []
 
         if locality is not None:
@@ -93,11 +98,93 @@ class Day (ndb.Model):
         else:
             res = query.fetch_page (limit)
 
-        return res  
+        return res
 
-            
     @classmethod
-    def query_keyword_days (cls, keyhash, args):
+    def query_word_days (cls, args, words):
+
+        cursor = args.get ('cursor', None)
+        locality = args.get ('locality', None)
+
+        if cursor is None and locality is None:
+            return ([], None, False)
+
+        minimum_rating = args.get ('minimum_rating', None)
+        user_id = args.get ('user_id', None)
+        limit = args.get ('limit', None)
+        all_words = args.get ('all_words', None)
+
+        query_iter = None
+        if cursor is not None:
+            query_iter = Words.query ().iter (produce_cursors=True, start_cursor=cursor)
+        else:
+            query = Words.query_words (words, locality)
+            query_iter = query.iter (produce_cursors=True)
+            
+            if all_words == 'false':
+                pos = 1
+                order = 0
+
+                while query_iter is None or query_iter.has_next () is False:
+                    if len (words[pos:]) > 1:
+
+                        if order == 0:
+                            query = Words.query_words (words[pos:], locality)
+                            query_iter = query.iter (produce_cursors=True)
+                        elif order == 1:
+                            query = Words.query_words (words[:len (words) - pos], locality)
+                            query_iter = query.iter (produce_cursors=True)
+                        elif len (words[pos:len (words) - pos]) > 1:
+                            query = Words.query_words (words[pos:len(words) - pos], locality)
+                            query_iter = query.iter (produce_cursors=True)
+                        pos += 1
+                        if order == 2:
+                            order = 0
+                        else:
+                            order += 1
+                    else:
+                        for each in words:
+                            query = Words.query_words ([each], locality)
+                            query_iter = query.iter (produce_cursors=True)
+                            if query_iter is not None and query_iter.has_next (): 
+                                break
+
+                        break
+
+
+        added = 0
+        days = []
+
+        for words in query_iter:
+            day = words.day.get ()
+            if added > 0 and days[added - 1].key == day.key:
+                continue
+
+            if user_id is not None and day.user_id != user_id:
+                continue
+
+            if minimum_rating is not None and day.averageReview < minimum_rating:
+                continue
+            
+            days.append (day)
+            added += 1
+            
+            if added == limit:
+                break
+
+
+        if query_iter.has_next ():
+            cursor = query_iter.cursor_after ()
+            more = True
+        else:
+            cursor = None
+            more = False
+
+        return (days, cursor, more)
+
+
+    @classmethod
+    def query_keyword_days (cls, keyhash, args, words):
 
         locality = args.get ('locality', None)
         minimum_rating = args.get ('minimum_rating', None)
@@ -105,16 +192,15 @@ class Day (ndb.Model):
         cursor = args.get ('cursor', None)
         limit = args.get ('limit', None)
         
-        if locality is None:
+        if cursor is None and locality is None:
             return ([], None, False)
 
-        kdl_query = KeywordsDayList.query_keyhash (keyhash, locality)
-
+        
         kdl_query_iter = None
-
         if cursor is not None:
-            kdl_query_iter = kdl_query.iter (produce_cursors=True, start_cursor=cursor)
+            kdl_query_iter = KeywordsDayList.query ().iter (produce_cursors=True, start_cursor=cursor)
         else:
+            kdl_query = KeywordsDayList.query_keyhash (keyhash, locality)
             kdl_query_iter = kdl_query.iter (produce_cursors=True)
 
         added = 0
@@ -123,6 +209,10 @@ class Day (ndb.Model):
             for key in keywords.days:
             
                 found_day = key.get ()
+
+                if words is not None:
+                    if Words.query_days_words ([found_day.key], words).get () is None:
+                        continue
 
                 if user_id is not None and day.user_id != user_id:
                     continue
