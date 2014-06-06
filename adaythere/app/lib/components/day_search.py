@@ -13,9 +13,18 @@ class DaySearch (BootstrapForm):
             "ng-options": "keyword for keyword in daysearch_keywords"
         })
 
-        self.add_input_element ("daysearch_locality_input", "Locality", {
+        self.add_input_element ("daysearch_locality_input", "Locality:", {
             "ng-model": "daysearch_locality"
-        });
+        })
+
+        self.add_input_element ("daysearch_words_input", "Words:", {
+            "ng-model": "daysearch_words"
+        })
+
+        self.add_input_element ("daysearch_all_words_checkbox", "All words:", {
+            "type": "checkbox",
+            "ng-model": "daysearch_all_words"
+        })
 
         self.add_button ("Search", {
             "type": "button",
