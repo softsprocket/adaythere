@@ -192,9 +192,6 @@ class HomeHandler (webapp2.RequestHandler):
             { "src":"js/modernizr.custom.js" },
             { "src":"js/page-transitions.js" },
             { "src":"js/easing.min.js" },
-            { "src":"js/jquery.svg.js" },
-            { "src":"js/jquery.svganim.js" },
-            { "src":"js/jquery.parallax.min.js" },
             { "src":"js/startup-kit.js" },
             { "src": maps.get_script_src () },
             { "src":"js/adaythere.js"}
