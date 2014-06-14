@@ -831,9 +831,6 @@ section * {
 	}
 }
 /* header */
-.header-startup-antiflicker {
-	border-bottom: 1px #bdc3c7 solid;
-}
 .header {
 	padding-top: 0;
 	padding-bottom: 0;
