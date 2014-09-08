@@ -23,6 +23,8 @@ import app.admin
 import app.photos
 import app.keywords
 import app.locality_days
+import app.user_comments
+import app.user
 from webapp2_extras import i18n
 import os
 from app.lib.google.maps import Maps
@@ -30,7 +32,7 @@ import logging
 import json
 import inspect
 from app.lib.db.user import User
-from app.lib.components.genmodal import Modal, ProfileModal, MarkerModal, SelectDayModal, AdminProfileModal, AddPhotosModal
+from app.lib.components.genmodal import Modal, ProfileModal, MarkerModal, AdminProfileModal, AddPhotosModal, BecomeAContributorModal
 from app.lib.components.element import Elements
 from app.lib.components.day_views import DayDisplay, DayPhotoDisplay, DayInfoDisplay
 from app.lib.db.days import Day, DayPhoto
@@ -68,6 +70,7 @@ class ToolsHandler (webapp2.RequestHandler):
         adaythere.add_script_tags_for_body ([
             { "src":"js/jquery-1.11.0-beta2.js" },
             { "src":"js/angular/angular.min.js" },
+            { "src":"js/angular/angular-route.min.js" },
             { "src":"js/ui-bootstrap-tpls-0.10.0.min.js" },
             { "src": maps.get_script_src () },
             { "src":"js/adaythere.js" }
@@ -86,7 +89,7 @@ class ToolsHandler (webapp2.RequestHandler):
             logging.info ("user federated_identity: " + str (user.federated_identity ()));
             logging.info ("user federated_provider: " + str (user.federated_provider ()));
             logging.info ("user auth_domain: " + str (user.auth_domain ()));
-
+            
             db_user = User.query_user_id (str (user.user_id ()))
 
             if db_user is None:
@@ -100,7 +103,7 @@ class ToolsHandler (webapp2.RequestHandler):
 
 
         adminProfileModal = AdminProfileModal ()
-
+        contributorModal = BecomeAContributorModal ()
 
         sidebar_display = """
                 <li id="sidebar_display_menu_item" ng-controller="sidebarDisplayCtrl" style="list-style:none; position:absolute; right:10px; top:5px">
@@ -119,31 +122,42 @@ class ToolsHandler (webapp2.RequestHandler):
         adaythere.open_element ("div")
         adaythere.append_to_element (adminProfileModal.get ())
         adaythere.close_element ("div")
+        adaythere.open_element ("div")
+        adaythere.append_to_element (contributorModal.get ())
+        adaythere.close_element ("div")
         adaythere.append_to_element (sidebar_display)
         adaythere.close_element ("header")
 
-        adaythere.open_element ("section", { "id":"welcome_to_left", "ng-controller":"welcome_controller"})
+        adaythere.open_element ("div", { "ng-controller":"daysSearchCtrl"})
+        
+        adaythere.open_element ("section", { "id":"welcome_to_left" })
         adaythere.append_to_element ("""
-                    <button type="button" ng-click="open_welcome_doors ()" style="position:absolute;right:0">Click</button>
+                    <img src="img/logo.png" width="60%"></img>
+                    <p><h1 style="font-style:italic;text-align:center;font-size:large;">Celebrating the joys of place.</h3></p>
                 """)
         adaythere.close_element ("section")
-
-        adaythere.open_element ("section", { "id":"welcome_to_right", "ng-controller":"welcome_controller" })
-        adaythere.append_to_element ("""
-                    <button type="button" ng-click="open_welcome_doors ()" style="position:absolute;left:0">Me</button>
-                """)
+        
+        adaythere.open_element ("section", { "id":"welcome_to_right" })
         adaythere.close_element ("section")
 
-        adaythere.open_element ("section", { "id":"find_a_day", "ng-controller":"daysSearchCtrl" })
-
+        adaythere.open_element ("section", { "id": "daysearch_overlay" })
         day_search = DaySearch ()
         search_form = day_search.get ()
         adaythere.append_to_element (search_form)
+        adaythere.close_element ("section")
+
+
+        adaythere.open_element ("section", { "id":"find_a_day" })
 
         adaythere.append_to_element ("""
-                    <button type=button ng-click="become_a_contributor ()" style="position:absolute;bottom:0">Get Access To Tools</button>
+                    <img src="img/logo.png" width="30%"></img>
+                    <p><h1 style="font-style:italic;text-align:center;font-size:large;">Celebrating the joys of place.</h3></p>
                 """)
+
+        adaythere.append_to_element (day_search.get_days_display ())
         adaythere.close_element ("section")
+    
+        adaythere.close_element ("div")
 
         adaythere.append_to_element (MapTools.map_elements ().get ())
 
@@ -477,7 +491,6 @@ class MapTools ():
 
         profileModal = ProfileModal ()
         markerModal = MarkerModal ()
-        selectDayModal = SelectDayModal ()
         addPhotosModal = AddPhotosModal ()
 
         element.open_element ("section", {"id":"sidebar_section", "ng-controller":"sidebarCtrl"})\
@@ -513,9 +526,6 @@ class MapTools ():
             .append_to_element (markerModal.get ())\
             .close_element ("div")\
             .open_element ("div")\
-            .append_to_element (selectDayModal.get ())\
-            .close_element ("div")\
-            .open_element ("div")\
             .append_to_element (addPhotosModal.get ())\
             .close_element ("div")\
             .close_element ("section")
@@ -534,6 +544,8 @@ app = webapp2.WSGIApplication ([
     ('/profile', app.profile.ProfileHandler),
     ('/admin_profiles', app.admin.ProfilesHandler),
     ('/keywords', app.keywords.KeywordHandler),
-    ('/locality_days', app.locality_days.LocalityDaysHandler)
+    ('/locality_days', app.locality_days.LocalityDaysHandler),
+    ('/user_comments', app.user_comments.UserCommentsHandler),
+    ('/users', app.user.UsersHandler)
 ], debug=True)
 

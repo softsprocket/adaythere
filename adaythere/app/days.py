@@ -26,7 +26,8 @@ class DayHandler (webapp2.RequestHandler):
 
         day = Day ()
         day.userid = db_user.user_id
-        day.locality = data['locality']
+        day.name = db_user.name
+        day.full_locality = data['full_locality']
         day.title = data['title']
         day.description = data['description']
 
@@ -64,18 +65,18 @@ class DayHandler (webapp2.RequestHandler):
 
             photo_query = Photos.query_photo (db_user.user_id, photo['title'])
             pq = photo_query.get ()
-            cnt = pq.used_by.count (day.title)
-            if (cnt == 0):
-                pq.used_by.append (day.title)
+            if pq is not None:
+                cnt = pq.used_by.count (day.title)
+                if (cnt == 0):
+                    pq.used_by.append (day.title)
 
-            pq.put ()
-
+                pq.put ()
 
         day.put ()
 
         KeywordsDayList.add_keywords (day)
 
-        Words.add_words (day.title, day.description, day.key, day.locality)
+        Words.add_words (day.title, day.description, day.key, day.full_locality)
 
         self.response.status = 200
 
@@ -112,7 +113,7 @@ class DayHandler (webapp2.RequestHandler):
 
         KeywordsDayList.delete_keywords (day)
         
-        day.locality = data['locality']
+        day.full_locality = data['full_locality']
         day.title = data['title']
         day.description = data['description']
 
@@ -156,7 +157,7 @@ class DayHandler (webapp2.RequestHandler):
 
         KeywordsDayList.add_keywords (day)
 
-        Words.update_words (day.title, day.description, day.key, day.locality)
+        Words.update_words (day.title, day.description, day.key, day.full_locality)
 
         self.response.status = 200
 

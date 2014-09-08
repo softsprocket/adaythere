@@ -9,11 +9,6 @@ class KeywordHandler (webapp2.RequestHandler):
 
     def get (self):
 
-        tool_user, db_user = ADayThere.tool_user ()
-        if not tool_user:
-            self.response.status = 401
-            return
-
         keywords = Keywords.query ().fetch ()
 
         rv = []

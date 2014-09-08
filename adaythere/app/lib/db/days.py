@@ -21,14 +21,15 @@ class DayPhoto (ndb.Model):
 
 class Day (ndb.Model):
     userid = ndb.StringProperty ()
-    locality = ndb.StringProperty ()
+    name = ndb.StringProperty ()
+    full_locality = ndb.StringProperty ()
     title = ndb.StringProperty ()
     keywords = ndb.StringProperty (repeated=True)
     description = ndb.StringProperty ()
     places = ndb.StructuredProperty (Place, repeated=True)
     photos = ndb.StructuredProperty (DayPhoto, repeated=True)
-    numberOfReviews = ndb.IntegerProperty ()
-    averageReview = ndb.IntegerProperty ()
+    numberOfReviews = ndb.IntegerProperty (default=0)
+    averageReview = ndb.IntegerProperty (default=0)
 
     @classmethod
     def query_user (cls, userid):
@@ -43,13 +44,13 @@ class Day (ndb.Model):
     def query_random (cls, num_samples, **kwargs):
         keys = None
         
-        locality = kwargs.get ('locality')
+        full_locality = kwargs.get ('full_locality')
         minimum_rating = kwargs.get ('minimum_rating')
 
-        if locality is not None and minimum_rating is not None:
-            keys = cls.query (cls.locality == locality, averageReview >= minimum_rating).fetch (keys_only=True)
-        elif locality is not None:
-            keys = cls.query (cls.locality == locality).fetch (keys_only=True)
+        if full_locality is not None and minimum_rating is not None:
+            keys = cls.query (cls.full_locality == full_locality, averageReview >= minimum_rating).fetch (keys_only=True)
+        elif full_locality is not None:
+            keys = cls.query (cls.full_locality == full_locality).fetch (keys_only=True)
         elif minimum_rating is not None:
             keys = cls.query (cls.averageReview >= minimum_rating).fetch (keys_only=True)
         else:
@@ -70,28 +71,24 @@ class Day (ndb.Model):
     def query_days (cls, args):
 
         cursor = args.get ('cursor', None)
-        locality = args.get ('locality', None)
+        full_locality = args.get ('full_locality', None)
         minimum_rating = args.get ('minimum_rating', None)
         user_id = args.get ('user_id', None)
-        limit = args.get ('limit', None)
+        limit = args.get ('limit', 20)
 
-        if cursor is None and locality is None:
+        if cursor is None and full_locality is None:
             return ([], None, False)
-
-        if limit is None:
-            limit = 20
 
         res = (None, None, False)
         filters = []
-
-        if locality is not None:
-            filters.append (cls.locality == locality)
-        if minimum_rating is not None:
-            filters.append (cls.averageReview >= minimum_rating)
-        if user_id is not None:
-            filters.append (cls.user_id == user_id)
         
-        query = cls.query (filters)
+        query = cls.query ()
+        if full_locality is not None:
+            query = query.filter (cls.full_locality == full_locality)
+        if minimum_rating is not None and int(minimum_rating) != 0:
+            query = query.filter (cls.averageReview >= minimum_rating)
+        if user_id is not None:
+            query = query.filter (cls.user_id == user_id)
 
         if cursor is not None:
             res = query.fetch_page (limit, start_cursor = cursor)
@@ -104,9 +101,9 @@ class Day (ndb.Model):
     def query_word_days (cls, args, words):
 
         cursor = args.get ('cursor', None)
-        locality = args.get ('locality', None)
+        full_locality = args.get ('full_locality', None)
 
-        if cursor is None and locality is None:
+        if cursor is None and full_locality is None:
             return ([], None, False)
 
         minimum_rating = args.get ('minimum_rating', None)
@@ -118,7 +115,7 @@ class Day (ndb.Model):
         if cursor is not None:
             query_iter = Words.query ().iter (produce_cursors=True, start_cursor=cursor)
         else:
-            query = Words.query_words (words, locality)
+            query = Words.query_words (words, full_locality)
             query_iter = query.iter (produce_cursors=True)
             
             if all_words == 'false':
@@ -129,13 +126,13 @@ class Day (ndb.Model):
                     if len (words[pos:]) > 1:
 
                         if order == 0:
-                            query = Words.query_words (words[pos:], locality)
+                            query = Words.query_words (words[pos:], full_locality)
                             query_iter = query.iter (produce_cursors=True)
                         elif order == 1:
-                            query = Words.query_words (words[:len (words) - pos], locality)
+                            query = Words.query_words (words[:len (words) - pos], full_locality)
                             query_iter = query.iter (produce_cursors=True)
                         elif len (words[pos:len (words) - pos]) > 1:
-                            query = Words.query_words (words[pos:len(words) - pos], locality)
+                            query = Words.query_words (words[pos:len(words) - pos], full_locality)
                             query_iter = query.iter (produce_cursors=True)
                         pos += 1
                         if order == 2:
@@ -144,7 +141,7 @@ class Day (ndb.Model):
                             order += 1
                     else:
                         for each in words:
-                            query = Words.query_words ([each], locality)
+                            query = Words.query_words ([each], full_locality)
                             query_iter = query.iter (produce_cursors=True)
                             if query_iter is not None and query_iter.has_next (): 
                                 break
@@ -157,6 +154,7 @@ class Day (ndb.Model):
 
         for words in query_iter:
             day = words.day.get ()
+            
             if added > 0 and days[added - 1].key == day.key:
                 continue
 
@@ -172,7 +170,6 @@ class Day (ndb.Model):
             if added == limit:
                 break
 
-
         if query_iter.has_next ():
             cursor = query_iter.cursor_after ()
             more = True
@@ -186,38 +183,37 @@ class Day (ndb.Model):
     @classmethod
     def query_keyword_days (cls, keyhash, args, words):
 
-        locality = args.get ('locality', None)
+        full_locality = args.get ('full_locality', None)
         minimum_rating = args.get ('minimum_rating', None)
         user_id = args.get ('user_id', None)
         cursor = args.get ('cursor', None)
         limit = args.get ('limit', None)
         
-        if cursor is None and locality is None:
+        if cursor is None and full_locality is None:
             return ([], None, False)
 
-        
         kdl_query_iter = None
         if cursor is not None:
             kdl_query_iter = KeywordsDayList.query ().iter (produce_cursors=True, start_cursor=cursor)
         else:
-            kdl_query = KeywordsDayList.query_keyhash (keyhash, locality)
+            kdl_query = KeywordsDayList.query_keyhash (keyhash, full_locality)
             kdl_query_iter = kdl_query.iter (produce_cursors=True)
 
         added = 0
         days = []
         for keywords in kdl_query_iter:
-            for key in keywords.days:
             
+            for key in keywords.days:
                 found_day = key.get ()
 
                 if words is not None:
                     if Words.query_days_words ([found_day.key], words).get () is None:
                         continue
 
-                if user_id is not None and day.user_id != user_id:
+                if user_id is not None and found_day.user_id != user_id:
                     continue
 
-                if minimum_rating is not None and day.averageReview < minimum_rating:
+                if minimum_rating is not None and minimum_rating != 0 and found_day.averageReview < minimum_rating:
                     continue
 
                 days.append (found_day)
@@ -242,11 +238,11 @@ class KeywordsDayList (ndb.Model):
 
     keyhash = ndb.StringProperty ()
     days = ndb.KeyProperty (kind=Day, repeated=True)
-    locality = ndb.StringProperty ()
+    full_locality = ndb.StringProperty ()
 
     @classmethod
-    def query_keyhash (cls, keyhash, locality):
-        return cls.query (cls.keyhash == keyhash, cls.locality == locality)
+    def query_keyhash (cls, keyhash, full_locality):
+        return cls.query (cls.keyhash == keyhash, cls.full_locality == full_locality)
 
     @classmethod
     def add_keywords (cls, day):
@@ -260,15 +256,13 @@ class KeywordsDayList (ndb.Model):
             for ea in comb:
                 word_list = sorted (map (lambda x: x.strip (), ea))
                 keyhash = hashlib.sha256(str(word_list)).hexdigest()
-                kq = KeywordsDayList ().query_keyhash (keyhash, day.locality)
+                kq = KeywordsDayList ().query_keyhash (keyhash, day.full_locality)
                 kdl = kq.get ()
-
-                print "Adding keyhash:", keyhash, word_list 
 
                 if kdl is None:
                     daylist = KeywordsDayList () 
                     daylist.keyhash = keyhash
-                    daylist.locality = day.locality
+                    daylist.full_locality = day.full_locality
 
                     daylist.days = []
                     daylist.days.append (day.key)
@@ -291,7 +285,7 @@ class KeywordsDayList (ndb.Model):
                 word_list = sorted (map (lambda x: x.strip (), ea))
                 keyhash = hashlib.sha256(str(word_list)).hexdigest()
                 
-                kq = KeywordsDayList ().query_keyhash (keyhash, day.locality)
+                kq = KeywordsDayList ().query_keyhash (keyhash, day.full_locality)
                 kdl = kq.get ()
 
                 if kdl is not None:

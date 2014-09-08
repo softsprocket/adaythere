@@ -93,6 +93,10 @@ section#welcome_to_left {
 	left:0;
 	z-index:2;
 	background-color:#C8C8C8;
+	background-image:url('../img/lake_left.png');
+	background-repeat: no-repeat;
+	background-position: right top;
+	background-size: cover;
 }
 
 section#welcome_to_right {
@@ -101,13 +105,35 @@ section#welcome_to_right {
 	right:0;
 	z-index:2;
 	background-color:#C8C8C8;
+	background-image:url('../img/lake_right.png');
+	background-repeat: no-repeat;
+	background-position: left top; 
+	background-size: cover;
+}
+
+section#daysearch_overlay {
+	z-index:10;
 }
 
 section#find_a_day {
 	position:absolute;
 	width:100%;
 	z-index:1;
-	background-color:#E8E8E8;
+	background-color:#C8C8C8;
+	background-image:url('../img/emarld_lake_syled.png');
+	background-repeat: no-repeat;
+	background-position: left top;
+	background-size: cover;
+}
+
+#daysearch_return_display {
+	padding:4px;
+	margin-top:4px;
+	border: 1px solid #C0C0C0;
+	-moz-border-radius: 4px;
+	-webkit-border-radius: 4px;
+	background-color:rgba(200,200,200,0.5);;
+	overflow-y:auto;
 }
 
 .dropdown {
@@ -139,5 +165,28 @@ section#find_a_day {
 	border: 1px solid #C0C0C0;
 	-moz-border-radius: 4px;
 	-webkit-border-radius: 4px;
+}
+
+.fieldset_daysearch {
+	width: 75%;
+	padding: 10px;
+	margin-left: auto;
+	margin-right: auto;
+	margin-top: 30%;
+	background-color: rgba(200,200,200,0.5);
+}
+
+.daysearch_label {
+	float: left;
+}
+
+.daysearch_input {
+	width: 100%;
+}
+
+.heading_font {
+	font: larger arial, sans-serif;	
+	text-align: center;
+	color: blue;
 }
 
