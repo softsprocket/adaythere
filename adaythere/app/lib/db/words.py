@@ -10,11 +10,11 @@ class Words (ndb.Model):
 
     words = ndb.StructuredProperty (Word, repeated = True)
     day = ndb.KeyProperty ("Day")
-    locality = ndb.StringProperty ()
+    full_locality = ndb.StringProperty ()
 
 
     @classmethod
-    def add_words (cls, title, description, key, locality):
+    def add_words (cls, title, description, key, full_locality):
 
         s = title + " " + description
         wc = WordCount ()
@@ -29,7 +29,7 @@ class Words (ndb.Model):
             words.words.append (word)
 
         words.day = key
-        words.locality = locality
+        words.full_locality = full_locality
 
         words.put ()
 
@@ -37,17 +37,18 @@ class Words (ndb.Model):
     @classmethod
     def delete_words (cls, key):
         words = cls.query (cls.day == key).get ()
-        words.key.delete () 
+        if words is not None:
+            words.key.delete () 
 
     @classmethod
-    def update_words (cls, title, description, key, locality):
+    def update_words (cls, title, description, key, full_locality):
         cls.delete_words (key)
-        cls.add_word (title, description, key, locality)
+        cls.add_words (title, description, key, full_locality)
 
     @classmethod
-    def query_words (cls, words, locality):
+    def query_words (cls, words, full_locality):
         query = cls.query ()
-        query = query.filter (cls.locality == locality)
+        query = query.filter (cls.full_locality == full_locality)
         for each in words:
             query = query.filter (cls.words.word == each)
 

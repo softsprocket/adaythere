@@ -46,6 +46,17 @@ function ADT_string_trim (str) {
 	return str.replace (/^\s+|\s+$/gm,'');
 }
 
+function ADT_Apply (scope, func) {
+	if (scope) {
+		var phase = scope.$root.$$phase;
+		if (phase == '$apply' || phase == '$digest') {
+			func ();
+		} else {
+			var self = this;
+			scope.$apply (func);
+		}
+	}
+}
 
 function ADT_DirectionsRenderer (map) {
 	this.directionsService = new google.maps.DirectionsService ();
@@ -165,6 +176,7 @@ function ADT_CreatedDay () {
 	this.description = "";
 	this.places = [];
 	this.photos = [];
+	this.full_locality = "";
 
 	this.markers_visible = false;
 }
@@ -173,13 +185,14 @@ ADT_CreatedDay.prototype.is_cleared = function () {
 
 	return ((this.title == "")  &&  (this.keywords == "")
 		&& (this.description == "") && (this.places.length == 0) 
-		&& (this.photos.length == 0));
+		&& (this.photos.length == 0) && (this.full_locality == ""));
 };
 
 ADT_CreatedDay.prototype.clear = function () {
 	this.title = "";
 	this.description = "";
 	this.keywords = "";
+	this.full_locality = ""
 	for (var index in this.places) {
 		if (this.places[index].marker) {
 			this.places[index].marker.setMap (null);
@@ -257,7 +270,7 @@ ADT_CreatedDay.prototype.to_json = function () {
 	day.title = this.title;
 	day.keywords = this.keywords;
 	day.description = this.description;
-	day.locality = this.locality;
+	day.full_locality = this.full_locality;
 
 	for (var index = 0; index < this.places.length; ++index) {
 		var place = new ADT_Place ();
@@ -287,7 +300,7 @@ ADT_CreatedDay.copy = function (created_day) {
 	day.title = created_day.title;
 	day.keywords = created_day.keywords;
 	day.description = created_day.description;
-	day.locality = created_day.locality;
+	day.full_locality = created_day.full_locality;
 
 	day.is_editable = created_day.is_editable;
 	day.is_collapsed = created_day.is_collapsed;
@@ -326,7 +339,7 @@ ADT_CreatedDay.prototype.show_markers = function (scope, map) {
 				timer = null;
 
 			}
-			scope.open_marker_modal (place, false, false);
+			scope.adt_marker_modal.open_marker_modal (place, false, false);
 		});
 
 		var infowindow = new google.maps.InfoWindow ({
@@ -402,25 +415,29 @@ ADT_GeoLocate.prototype.setDefault = function () {
 	var self = this;
 
 	return this.location_promise.then (function (data) {
+		console.log ("setDefault", data);
 		if (data && !isNaN (data.latitude)) {
 			self.location.latitude = data.latitude;
 			self.location.longitude = data.longitude;
 			self.location.locality = data.locality;
-			self.location.vicinity = data.address;
+			self.location.vicinity = data.vicinity ? data.vicinity : data.address;
+			self.location.full_locality = data.full_locality ? data.full_locality : self.location.vicinity;
 			self.default_location_set = true;
 		} else {
 
 			self.location.latitude = 48.422;
 			self.location.longitude = -123.408;
 			self.location.locality = "Victoria";
-			self.location.vicinity = "Victoria, BC Canada";
+			self.location.vicinity = "Victoria,BC,Canada";
+			self.location.full_locality = self.location.vicinity;
 		}
 	}, function () {
 
 		self.location.latitude = 48.422;
 		self.location.longitude = -123.408;
 		self.location.locality = "Victoria";
-		self.location.vicinity = "Victoria, BC Canada";
+		self.location.vicinity = "Victoria,BC,Canada";
+		self.location.full_locality = self.location.vicinity;
 	});
 }
 
@@ -429,6 +446,7 @@ ADT_GeoLocate.prototype.geolocate = function () {
 	var deferred = $.Deferred ();
 
 	this.setDefault ().then (function () {
+		
 		if (self.default_location_set == true) {
 			deferred.resolve ();
 		} else {
@@ -456,8 +474,17 @@ ADT_GeoLocate.prototype.google_reverse_lookup = function (handler_function) {
 }
 
 ADT_GeoLocate.prototype.setRegion = function (data) {
-	this.location.locality = data.locality ? data.locality : "";
-	this.location.vicinity = data.vicinity ? data.vicinity : "";
+	this.location.locality = data.locality ? data.locality : null;
+	this.location.region = data.region ? data.region : null;
+	this.location.country_name = data.country_name ? data.country_name : null;
+	this.location.full_locality = (this.location.locality != null ? this.location.locality + "," : "")
+		+ (this.location.region != null ? this.location.region + "," : "")
+		+ (this.location.country_name != null ? this.location.country_name : "");
+
+
+	this.location.vicinity = (data.vicinity != null ? data.vicinity: this.location.full_locality);
+
+	console.log ("ADT_Geolocate setRegion", this.location.full_locality);
 }
 
 ADT_GeoLocate.prototype.getLocation = function () {
@@ -467,12 +494,13 @@ ADT_GeoLocate.prototype.getLocation = function () {
 /*
  * ADT_GoogleMapService
  */
-function ADT_GoogleMapService (location) {
-	this.geoloc = new ADT_GeoLocate (location);
+function ADT_GoogleMapService (loc) {
+
+	this.geoloc = new ADT_GeoLocate (loc);
 	this.geocoder = new google.maps.Geocoder ();
 	this.map = null;
 	this.autocomplete = null;
-	this.boundsCircle =null;
+	this.boundsCircle = null;
 	this.search_area_is_visible = false;
 	this.timerId = null;
 	
@@ -493,8 +521,9 @@ function ADT_GoogleMapService (location) {
 ADT_GoogleMapService.prototype.initialize = function (scope) {
 	var deferred = $.Deferred ();
 	self = this;
+	
 	this.geoloc.geolocate ().fail (function (err_msg) {
-		console.error (err_msg);
+		console.error ("GoogleMapService initialize: geolocate", err_msg);
 	}).always (function () {
 
 		var styles = [{
@@ -522,21 +551,6 @@ ADT_GoogleMapService.prototype.initialize = function (scope) {
 
 		self.autocomplete = new google.maps.places.Autocomplete (input);
 		self.autocomplete.bindTo ("bounds", self.map);
-
-		if (self.geoloc.location.vicinity) {
-			deferred.resolve (self.geoloc);
-		} else {
-
-			self.geoloc.google_reverse_lookup (function (response) {
-				var lookup = new ADT_GoogleReverseLookup (response);
-				var res = lookup.location ();
-				if (res.status) {
-					self.geoloc.setRegion (res.result);
-				}
-
-				deferred.resolve (self.geoloc);
-			});
-		}
 
 		self.boundsCircle = new ADT_BoundingCircle (self.map);
 
@@ -573,6 +587,9 @@ ADT_GoogleMapService.prototype.initialize = function (scope) {
 			if (self.moved) {
 				self.moved = false;
 				self.geoloc.google_reverse_lookup (function (response) { 
+
+					console.log ("mouseup", response);
+
 					var lookup = new ADT_GoogleReverseLookup (response);
 					var res = lookup.location ();
 
@@ -585,13 +602,33 @@ ADT_GoogleMapService.prototype.initialize = function (scope) {
 		});
 
 		google.maps.event.addListener (self.autocomplete, "place_changed", function () {
-			
 			var place = self.autocomplete.getPlace ();
 			self.placeChange (place);
+			$("#centre_map_at_button").trigger ("click");
 		});
 
 
 		self.directionsRenderer = new ADT_DirectionsRenderer (self.map);
+
+		if (self.geoloc.location.vicinity) {
+			console.log ("self.geoloc.location", self.geoloc.location);
+			deferred.resolve (self.geoloc);
+		} else {
+
+			console.log ("self.geolocate", self.geoloc);
+			self.geoloc.google_reverse_lookup (function (response) {
+				console.log (response);
+
+				var lookup = new ADT_GoogleReverseLookup (response);
+				var res = lookup.location ();
+				if (res.status) {
+					self.geoloc.setRegion (res.result);
+				}
+
+				deferred.resolve (self.geoloc);
+			});
+		}
+
 	});
 
 	return deferred;
@@ -601,7 +638,36 @@ ADT_GoogleMapService.prototype.get = function () {
 	return this.map;
 }
 
+ADT_GoogleMapService.parse_region = function (spans) {
+	var loc = {};
+
+	var regex = new RegExp ("<\s*span[^<]*>[^<>]*<\/\s*span\s*>", "gi");
+	var matches = spans.match (regex);
+
+	$.each (matches, function (i, el) {
+		var adr = $.parseHTML (el);
+
+		if ($(adr)[0].className) {
+			if ($(adr)[0].className == 'locality') {
+				loc.locality = $(adr)[0].innerText;
+			} else if ($(adr)[0].className == 'region') {
+				loc.region = $(adr)[0].innerText;
+			} else if ($(adr)[0].className == 'country-name') {
+				loc.country_name = $(adr)[0].innerText;
+			}
+		}
+	});
+
+	return loc;
+}
+
 ADT_GoogleMapService.prototype.placeChange = function (place) {
+	
+	if (place.adr_address) {
+		console.log ("ADT_GoogleMapService.placeChange", place.adr_address);
+		var loc = ADT_GoogleMapService.parse_region (place.adr_address);		
+		self.geoloc.setRegion (loc);
+	}
 
 	if (!place.geometry) {
 		return;
@@ -613,10 +679,6 @@ ADT_GoogleMapService.prototype.placeChange = function (place) {
 		this.map.setCenter (place.geometry.location);
 	}
 
-	var locality = ADT_getLocality (place.address_components);
-	var vicinity = place.formatted_address;
-
-	self.geoloc.setRegion ({locality: locality, vicinity: vicinity});
 
 }
 
@@ -651,20 +713,25 @@ ADT_GoogleMapService.prototype.set_search_location = function (event, scope) {
  * ADT_GoogleReverseLookup
  */
 
-function ADT_getLocality (address_components) {
-	var result = null;
+function ADT_getFullLocality (address_components) {
+	var result = {};
 
 	for (var addr_index in address_components) {
 		var address =  address_components[addr_index];
 		if ((address.types.indexOf ("locality") != -1) && (address.types.indexOf ("political") != -1)) {
-			result = address.long_name;
-		} 
+			result.locality = address.long_name;
+		} else if ((address.types.indexOf ("administrative_area_level_1") != -1) && (address.types.indexOf ("political") != -1)) {
+			result.region = address.short_name;
+		} else if ((address.types.indexOf ("country") != -1) && (address.types.indexOf ("political") != -1)) {
+			result.country_name = address.long_name;
+		}
 	} 
 
 	return result;
 }
 
 function ADT_GoogleReverseLookup (data) {
+	console.log ("ADT_GoogleReverseLookup", data);
 	this.data = data.results;
 	this.status = (data.status == "OK" ? true : false);
 }
@@ -673,7 +740,7 @@ ADT_GoogleReverseLookup.prototype.location = function () {
 	var result = {};
 
 	if (this.status) {
-		 result.locality = ADT_getLocality (this.data[0].address_components);
+		 result = ADT_getFullLocality (this.data[0].address_components);
 		 result.address = this.data[0].formatted_address;
 	}
 
@@ -684,10 +751,61 @@ ADT_GoogleReverseLookup.prototype.location = function () {
 /*
  * adaythere angular module
  */
-var adaythere = angular.module ("adaythere", ['ui.bootstrap']);
+var adaythere = angular.module ("adaythere", ['ui.bootstrap', 'ngRoute']);
 
 adaythere.factory ("googleMapService", [ "profileService", function (profileService) {
 	return new ADT_GoogleMapService (profileService.getLocation ());
+}]);
+
+/*
+ * Search service
+ */
+
+function ADT_SearchService ($http, $q) {
+	this.$http = $http;
+	this.$q = $q;
+	this.locality_autocomplete = null;
+	this.locality_input = null;
+	this.full_locality = "";
+
+}
+
+ADT_SearchService.prototype.init = function () {
+
+	this.locality_input = document.getElementById ('locality_autocomplete_input');
+	this.locality_autocomplete = new google.maps.places.Autocomplete (this.locality_input);
+
+	if (this.locality_autocomplete == null) {
+		console.error ("Autocomplete", "unable to create");
+	} else {
+		this.locality_autocomplete.setTypes (['geocode']);
+		
+		var self = this;	
+		google.maps.event.addListener(this.locality_autocomplete, 'place_changed', function () {
+			var place = self.locality_autocomplete.getPlace ();
+			if (!place.geometry) {
+				console.error ("Not a place", place);
+				return;
+			}
+
+			console.log ("ADT_SearchService", place);
+			var data = ADT_GoogleMapService.parse_region (place.adr_address);
+
+			var locality = data.locality ? data.locality : null;
+			var region = data.region ? data.region : null;
+			var country_name = data.country_name ? data.country_name : null;
+			var full_locality = (locality != null ? locality + "," : "")
+				+ (region != null ? region + "," : "")
+				+ (country_name != null ? country_name : "");
+
+			self.full_locality = full_locality;
+			console.log ("ADT_SearchService", self.full_locality);
+		});
+	}
+}
+
+adaythere.factory ("searchService", ["$http", "$q", function ($http, $q) {
+	return new ADT_SearchService ($http, $q);
 }]);
 
 /*
@@ -752,18 +870,18 @@ ADT_ProfileService.prototype.setUserLocation = function (location) {
 
 }
 
-ADT_ProfileService.prototype.add_tool_access = function () {
+ADT_ProfileService.prototype.add_tool_access = function (name) {
 	var deferred = this.$q.defer ();
 	var self = this;
 
 	this.$http ({
 		method: "PUT",
-		url: "/profile?operation=add_tool_access"
+		url: "/profile?operation=add_tool_access&name=" + name
 	}).success (function (data, status, headers, config) {
-		deferred.resolve (true)
+		deferred.resolve (data)
 	}).error (function (data, status, headers, config) {
 		console.error (status, data);
-		deferred.resolve (false);
+		deferred.resolve (data);
 	});
 
 	return deferred.promise;
@@ -1137,40 +1255,202 @@ ADT_BoundingCircle.prototype.addClickListener = function (listener) {
 	this.clickListener = listener;
 }
 
-adaythere.controller ("daysSearchCtrl", ["$scope", "localityDaysService", "profileService", function ($scope, localityDaysService, profileService) {
+function ADT_DaysSearchMap (element_id, location) {
+	var styles = [{
+		featureType: "poi",
+		elementType: "labels",
+		stylers: [
+			{ visibility: "off" }
+		]
+	}];
 
-
-	$scope.become_a_contributor = function () {
-		profileService.add_tool_access ().then (function (result) {
-			if (result) {
-				ADT_SidebarDisplayControlInstance.display_control = true;
-				$("#find_a_day").slideUp ("slow");
-			}
-		});
+	var mapOptions = {
+		center: new google.maps.LatLng (location.latitude, location.longitude),
+		zoom: ADT_Constants.DEFAULT_MAP_ZOOM,
+		mapTypeId: google.maps.MapTypeId.ROADMAP,
+		styles: styles
 	};
 
-	$scope.daysearch_selected_keywords = [];
-	$scope.daysearch_keywords = localityDaysService.keywords;
-	$scope.daysearch_locality = "";
-	$scope.daysearch_words = "";
-	$scope.daysearch_all_words = false;
+	var el = document.getElementById (element_id);
+	this.map = new google.maps.Map (el, mapOptions);
+	this.map.setOptions ({styles: styles});
+
+}
+
+function ADT_UserRatingService (http, q) {
+	this.http = http;
+	this.q =q;
+}
+
+ADT_UserRatingService.prototype.send_rating = function (userid, title, rating, text) {
+	var qstr = '/user_comments';
+        var deferred = this.q.defer ();
+	
+	var data = {
+		userid: userid,
+		title: title,
+		rating:rating,
+		text: text
+	};
+
+	this.http.put (qstr, data).success (function (data, status, headers, config) {
+		var o = {
+			data: data,
+			status: status
+		};
+		deferred.resolve (o);
+	}).error (function (data, status, headers, config) {
+		var o = {
+			data: data,
+			status: status
+		};
+		deferred.reject (o);	        
+	});
+	
+	return deferred.promise;
+}
+
+ADT_UserRatingService.prototype.get_ratings = function (userid, title, limit, cursor) {
+	var qstr = '/user_comments?';
+        var deferred = this.q.defer ();
+	
+	var join = '&';
+	qstr += 'userid=';
+	qstr += userid;
+	qstr += join;
+	qstr += 'title=';
+	qstr += title;
+
+	if (limit || cursor) {
+		if (limit) {
+			qstr += join;
+			qstr += 'limit=';
+			qstr += limit;
+		}
+	
+		if (cursor) {
+			qstr += join;
+			qstr += 'cursor='
+			qstr += cursor;
+		}
+	}
+
+	this.http.get (qstr).success (function (data, status, headers, config) {
+		console.log (data);
+		var o = {
+			more: data.more,
+			cursor: data.cursor,
+			comments: [],
+			status: status
+		};
+
+		for (var i = 0; i < data.comments.length; ++i) {
+			o.comments.push (JSON.parse (data.comments[i]));
+		}
+
+		deferred.resolve (o);
+	}).error (function (data, status, headers, config) {
+		var o = {
+			data: data,
+			status: status
+		};
+		deferred.reject (o);	        
+	});
+	
+	return deferred.promise;
+}
+
+adaythere.factory ("userRatingService", ["$http", "$q", function ($http, $q) {
+	return new ADT_UserRatingService ($http, $q);
+}]);
+
+adaythere.controller ("daysSearchCtrl", ["$scope", "$modal", "localityDaysService", "profileService", 
+		"searchService", "googleMapService", "userRatingService", 
+		function ($scope, $modal, localityDaysService, profileService, searchService, googleMapService, userRatingService) {
+
+	searchService.init ();
+	$scope.adt_marker_modal = new ADT_MarkerModal ($scope, googleMapService.get (), $modal);
+
+	$scope.daysearch = {};
+	$scope.daysearch.selected_keywords = [];
+	$scope.daysearch.keywords = localityDaysService.keywords;
+	$scope.daysearch.full_locality = searchService.full_locality;
+	$scope.daysearch.words = "";
+	$scope.daysearch.all_words = "any";
+	$scope.daysearch.rating = 0;
+	$scope.daysearch.max = 10;
+	
+	var init_return = function () {
+		$scope.daysearch_returned = {};
+		$scope.daysearch_returned.days = [];
+		$scope.daysearch_returned.msg_to_user = "";
+		$scope.user_comments = [];
+		$scope.daysearch_returned.reviews = [];
+	}
+
+	init_return ();
+
+	$scope.open_welcome_doors = function () {
+		$("#welcome_to_left").hide ("slow");
+		$("#welcome_to_right").hide ("slow");
+		$("#daysearch_overlay").slideUp ();
+	};
+
+	$scope.return_to_daysearch = function () {
+		$("#welcome_to_left").show ("fast");
+		$("#welcome_to_right").show ("fast");
+		$("#daysearch_overlay").slideDown ();
+	};
 
 	localityDaysService.getKeywords ().then (function () {
-		$scope.daysearch_keywords = localityDaysService.keywords;
+		$scope.daysearch.keywords = localityDaysService.keywords;
 	});
 
+
 	$scope.getLocalityDays = function (params) {
+		init_return ();
 		localityDaysService.getDays (params).then (function (data) {
-			console.log ("LOCALITY DAYS *****************>", data);	
+			if (!data || data.days.length == 0) {
+				$scope.daysearch_returned.msg_to_user = "Search returned empty";
+			} else {
+				$scope.daysearch_returned.msg_to_user = "Search results";
+				for (var i = 0; i < data.days.length; ++i) { 
+					var day = JSON.parse (data.days[i]);
+					day.is_collapsed = true;
+					day.is_editable = false;
+					$scope.daysearch_returned.days.push (day);
+
+					userRatingService.get_ratings (day.userid, day.title).then (function (o) {
+						if (o.status == 200) {
+							console.log (o.comments);
+							$scope.daysearch_returned.reviews.push (o.comments);
+						} else {
+							$scope.daysearch_returned.reviews.push (null); 
+						}
+					});
+				}
+			}
 		});	
 	};
 
+	$scope.day_toggle_open = function (day) {
+		day.is_collapsed = !day.is_collapsed;
+	}
+
 	$scope.executeSearch = function () {
+		$scope.daysearch.full_locality = searchService.full_locality;
+
+		if ($scope.daysearch.full_locality == "") {
+			return;
+		}
+		
+		$scope.open_welcome_doors ();
+
 		var keywords = "";
-		var len = $scope.daysearch_selected_keywords.length;
+		var len = $scope.daysearch.selected_keywords.length;
 		for (var i = 0; i < len; ++i) {
 			var sep = (i + 1) == len ? "" : ","
-			keywords = keywords + $scope.daysearch_selected_keywords[i]  + sep;
+			keywords = keywords + $scope.daysearch.selected_keywords[i]  + sep;
 		}
 
 		args = {}
@@ -1178,20 +1458,136 @@ adaythere.controller ("daysSearchCtrl", ["$scope", "localityDaysService", "profi
 			args.keywords = keywords;
 		}
 
-		if ($scope.daysearch_words != "") {
-			args.words = $scope.daysearch_words;
+		if ($scope.daysearch.words != "") {
+			args.words = $scope.daysearch.words;
 		}
 
-		if ($scope.daysearch_locality != "") {
-			args.locality = $scope.daysearch_locality
+		if ($scope.daysearch.locality != "") {
+			args.full_locality = $scope.daysearch.full_locality
 		}
-	
-		args.all_words =  $scope.daysearch_all_words;
 
-		console.log (args)
+		args.minimum_rating = $scope.daysearch.rating;
+			
+		args.all_words =  ($scope.daysearch.all_words == "all");
+
+		console.log ("Search Args", args);
 
 		$scope.getLocalityDays (args);
 	};
+
+
+	$scope.user_comments = [];
+
+	function UserComment () {
+		this.collapsed = true;
+		this.rating = 0;
+		this.text = "";
+		this.max = 10;
+	};
+
+	$scope.open_dayview_rater = function (index) {
+
+		if (!$scope.user_comments[index]) {
+			$scope.user_comments[index] = new UserComment ();
+		}
+
+		$scope.user_comments[index].collapsed = false;
+	};
+
+	$scope.save_user_comment = function (day, index) {
+		$scope.user_comments[index].collapsed = true;
+
+		userRatingService.send_rating (day.userid, day.title, $scope.user_comments[index].rating, $scope.user_comments[index].text)
+		.then (function (o) {
+			$scope.daysearch_returned.days[index].numberOfReviews = o.data.numberOfReviews;
+			$scope.daysearch_returned.days[index].averageReview = o.data.averageReview;
+		}, function (o) {
+			if (o.status == 401) {
+				console.error ("Permission denied");					
+			} else if (o.status == 409) {
+				console.error ("previous rating", o.data);
+			} else {
+				console.error (o.status, o.data);
+			}
+		});
+
+		$scope.user_comments[index].text= "";
+		$scope.user_comments[index].rating = 0;
+	};
+
+	$scope.cancel_user_comment = function (index) {
+		$scope.user_comments[index].collapsed = true;
+		$scope.user_comments[index].text= "";
+		$scope.user_comments[index].rating = 0;
+	};
+
+	$scope.search_displayed_maps = [];
+	$scope.search_displayed_direction_renderer = [];
+	$scope.direction_modes = [
+		"Driving",
+                "Walking",
+		"Bicycling"
+	];
+
+	$scope.direction_mode = [];
+
+	$scope.show_map_of = function (day, index) {
+		var show_map = $("#dayssearch_show_map_button"+index).html () == "View Map";
+		var sel = 'googlemap_of_'+index;
+
+		console.log (index, day);
+
+		if (show_map) {
+			$("#daysearch_travelmode_selector"+index).show ();
+			var width = $("#daysearch_return_display").width ();
+			$("#"+sel).css ({
+				"width": width,
+				"height": "400px"
+			});
+			
+			if (!$scope.search_displayed_maps[index]) {
+				$scope.direction_mode[index] = "Driving";
+				$scope.search_displayed_maps[index] = new ADT_DaysSearchMap (sel, day.places[0].location);
+
+				var created_day = ADT_CreatedDay.copy (day);
+				console.log ("Created day", created_day);
+				created_day.show_markers ($scope, $scope.search_displayed_maps[index].map);
+
+				$("#daysearch_travelmode_selector"+index).change (function () { 
+					console.log ("selector");
+					switch ($scope.direction_mode[index]) {
+						case "Driving":
+							mode = google.maps.TravelMode.DRIVING;
+				       			break;
+						case "Walking":
+							mode = google.maps.TravelMode.WALKING;
+							break;
+						case "Bicycling":
+							mode = google.maps.TravelMode.BICYCLING;
+							break;
+						default:
+							mode = google.maps.TravelMode.DRIVING;
+							break;	
+					};		
+					$scope.search_displayed_direction_renderer[index].showDirections (day, mode);
+				});
+
+				$scope.search_displayed_direction_renderer[index] = new ADT_DirectionsRenderer ($scope.search_displayed_maps[index].map);
+				$scope.search_displayed_direction_renderer[index].showDirections (created_day, google.maps.TravelMode.DRIVING);
+			}
+			$("#dayssearch_show_map_button"+index).html ("Hide Map");
+		} else {
+			$("#daysearch_travelmode_selector"+index).hide ();
+			$("#dayssearch_show_map_button"+index).html ("View Map");
+			$("#"+sel).css ({ "height":0 });
+		}
+	};
+
+	$scope.show_reviews_for = function (index) {
+		$("#daysearch_review_display_window"+index).toggle ();
+		console.log ("Showing", index);
+	};	
+
 }]);
 
 adaythere.controller ("loginCtrl", ["$scope", "$http", "$modal", function ($scope, $http, $modal) {
@@ -1211,6 +1607,7 @@ adaythere.controller ("loginCtrl", ["$scope", "$http", "$modal", function ($scop
 			}
 		);
 	};
+
 
 	$scope.received_profile_data = [];
 
@@ -1292,9 +1689,41 @@ adaythere.AdminProfileModalInstanceCtrl = function ($scope, $modalInstance, $htt
 
 };
 
-adaythere.controller ("profileCtrl", ["$scope", "$modal", "profileService", function ($scope, $modal, profileService) {
+adaythere.controller ("profileCtrl", ["$scope", "$modal", "$http", "$compile", "profileService", function ($scope, $modal, $http, $compile, profileService) {
 
 	$scope.profile_body_content = { "error": "no profile" };
+
+	$scope.become_a_contributor = function () {
+		$scope.open_contribute_modal ();
+	};
+
+	$scope.open_contribute_modal = function () {
+
+		var modalInstance = $modal.open ({
+			templateUrl: 'becomeAContributorModalContent.html',
+		    	controller: adaythere.BecomeAContributorModalInstanceCtrl,
+		    	resolve: {
+		    		$http: function () {
+					return $http;
+				}
+			},
+		    	scope: $scope,
+		});
+
+		modalInstance.result.then (function (data) {
+			profileService.add_tool_access (data).then (function (result) {
+				if (result) {
+					$("#profile_ctrl_menu_toggle").text (result.name);
+				       	$("#tool_user_related_menu").html ($compile(result.menu)($scope));
+
+					ADT_SidebarDisplayControlInstance.display_control = true;
+					$scope.gotoToolsPage();
+				}
+			});
+		}, function () {
+			console.log ('Modal dismissed at: ' + new Date ());
+		});
+	};
 
 	$scope.profile = function () {
 
@@ -1324,7 +1753,81 @@ adaythere.controller ("profileCtrl", ["$scope", "$modal", "profileService", func
 
 	};
 
+	$scope.gotoToolsPage = function () {
+		$("#welcome_to_left").hide ("slow");
+		$("#welcome_to_right").hide ("slow");
+		$("#daysearch_overlay").slideUp ();
+ 		ADT_SidebarDisplayControlInstance.display_control = true;
+                $("#find_a_day").slideUp ("slow");
+	};
+
+	$scope.gotoSearchPage = function () {
+		ADT_SidebarDisplayControlInstance.display_control = false;
+		$("#find_a_day").slideDown ("fast");
+		$("#welcome_to_left").show ("fast");
+		$("#welcome_to_right").show ("fast");
+		$("#daysearch_overlay").slideDown ();
+	};
 }]);
+function test_name_characters (name) {
+	var pattern = /^[a-z0-9_]+$/i;
+	return pattern.test (name);
+}
+
+adaythere.directive ('contributorUserName', ['$http', function($http) {
+
+	return function (scope, element, attrs) {
+
+		element.blur (function () {
+			$("#contributor_name_choice").text (element[0].value);
+		});
+
+		element.keyup (function (ev) {
+			var name = element[0].value;
+			$("#contributor_name_choice").text (name);
+			if (!test_name_characters (name)) {
+				$("#contributor_name_choice").text (element[0].value + "contains characters that aren't permitted");
+				return;
+			}
+		       		
+			if (name.length >= 4) {
+				
+				$http.get ('/users?name='+name).success (function (data, status, headers, config) {
+					$("#contributor_name_choice").text (element[0].value + ' is ' + data);
+				}).error (function (data, status, headers, config) {
+					console.error (status, data);	
+				});
+			} 
+
+		});			
+	};
+}]);
+
+adaythere.BecomeAContributorModalInstanceCtrl = function ($scope, $modalInstance, $http) {
+
+
+	$scope.contribute_modal_ok = function () {
+		console.log ("contributor_modal_ok");
+	
+		var name = $("#contribute_google_nickname").val ();
+		if (!name || name.length < 4 || !test_name_characters (name)) {
+			console.error ("Invalid name", name);
+			return;
+		}
+
+		console.log ($modalInstance);
+		$http.post ("/users?name="+name).success (function (data, status, headers, config) {
+				$modalInstance.close (data);
+			}).error (function (data, status, headers, config) {
+				console.error (status, data);
+			});
+
+	};
+
+	$scope.contribute_modal_cancel = function () {
+		$modalInstance.dismiss ('cancel');
+	};
+};
 
 adaythere.ProfileModalInstanceCtrl = function ($scope, $modalInstance, profile_body_content) {
 
@@ -1444,6 +1947,34 @@ adaythere.controller ("sidebarDisplayCtrl", ["$scope", "googleMapService", funct
 	};
 }]);
 
+function ADT_Markers (map) {
+	this.markers = [];
+	this.map = map;
+}
+
+
+ADT_Markers.prototype.clear_all_markers = function () {
+	for (var index in this.markers) {
+		var marker = this.markers[index].marker;
+		marker.setMap (null);
+	}
+	
+	this.markers = [];	
+};
+
+ADT_Markers.prototype.remove_marker = function (marker) {
+	marker.marker.setMap (null);
+	var new_markers = [];
+
+	for (var index in this.markers) {
+		if (marker != this.markers[index]) {
+			new_markers.push (this.markers[index]);
+		}
+	}
+
+	this.markers = new_markers;
+};
+
 adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "$compile", 
 		"googleMapService", "profileService", "userDaysService", "photoService", "localityDaysService",
 		function ($scope, $modal, $http, $compile, googleMapService, profileService, userDaysService, photoService, localityDaysService) {
@@ -1454,9 +1985,18 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "$compile",
 	$scope.my_days = userDaysService.user_days;
 	$scope.my_deleted_days = userDaysService.deleted_days;
 
+	$scope.current_created_day = new ADT_CreatedDay ();
+
+	$scope.adt_markers = null
+
+	$scope.adt_marker_modal = null
+
 	googleMapService.initialize ($scope).then (function (geoloc) {
 		googleMapService.clicked = geoloc.location;
 		userDaysService.getDays ();
+		$scope.current_created_day.full_locality = $scope.location.full_locality;
+		$scope.adt_markers = new ADT_Markers (googleMapService.get ());
+		$scope.adt_marker_modal = new ADT_MarkerModal ($scope, googleMapService.get (), $modal);
 	});
 
 	$scope.types = [
@@ -1493,8 +2033,6 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "$compile",
 
 	$scope.search = { selected_type: "all" };
 
-	$scope.current_created_day = new ADT_CreatedDay ();
-
 	$scope.top_places_list = function (place) {
 		return $scope.current_created_day.top_places_list (place);
 	};
@@ -1505,15 +2043,13 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "$compile",
 
 	$scope.centre_map_at = function () {
 		var address = $("#autocomplete_google_input").val ();
-		googleMapService.geocoder.geocode ( { "address": address}, function (results, status) {
+		googleMapService.geocoder.geocode ( { "address": address }, function (results, status) {
 			if (status == google.maps.GeocoderStatus.OK) {
-				var place = results[0];
-				googleMapService.placeChange ($scope, place);
+				$scope.current_created_day.full_locality = googleMapService.location.full_locality;
 			} else {
 				console.error ("Geocode was not successful for the following reason: " + status);
 			}
 		});
-
 	};
 
 	$scope.make_default_location = function () {
@@ -1560,100 +2096,7 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "$compile",
 		googleMapService.boundsCircle.updateStatus (googleMapService.search_area_is_visible);	
 	};
 
-	$scope.markers = [];
 
-	$scope.clear_all_markers = function () {
-		for (var index in $scope.markers) {
-			var marker = $scope.markers[index].marker;
-			marker.setMap (null);
-		}
-		$scope.markers = [];	
-	};
-
-	$scope.remove_marker = function (marker) {
-		marker.marker.setMap (null);
-		var new_markers = [];
-
-		for (var index in $scope.markers) {
-			if (marker != $scope.markers[index]) {
-				new_markers.push ($scope.markers[index]);
-			}
-		}
-
-		$scope.markers = new_markers;
-	};
-
-
-	$scope.open_marker_modal = function (obj, show_add_button, arg) {
-		$scope.marker_content = obj;
-
-		$scope.marker_content.is_editable = (typeof arg != 'undefined' &&  typeof arg.is_editable != "undefined") ? arg.is_editable : arg;
-
-		var modalInstance = $modal.open ({
-			templateUrl: 'markerModalContent.html',
-		    	controller: adaythere.MarkerModalInstanceCtrl,
-		    	resolve: {
-			    	marker_content: function () {
-				    	return $scope.marker_content;
-			    	},
-		    		show_add_button: function () {
-					return show_add_button;
-				},
-		    		map: function () {
-					return googleMapService.get ();
-				}
-		    	},
-		    	scope: $scope 
-		});
-
-		modalInstance.result.then (function (place) {
-			if (place) {
-				console.log (place);
-				$scope.current_created_day.places.push (place);
-				var sep = "";
-				if ($scope.current_created_day.keywords.length > 0) {
-					sep = ", ";
-				}
-				for (var i = 0; i < place.types.length; ++i) {
-
-					if (place.types[i] == "establishment") {
-						continue;
-					}
-
-					if ($scope.current_created_day.keywords.indexOf (place.types[i]) > -1) {
-						continue;
-					}
-
-					$scope.current_created_day.keywords += sep;
-					$scope.current_created_day.keywords += place.types[i];
-					sep = ", ";
-				}
-			}
-		}, function () {
-		
-		});
-	};
-
-	$scope.open_selectday_modal = function (obj) {
-		$scope.marker_content = obj;
-
-		var modalInstance = $modal.open ({
-			templateUrl: 'selectDayModalContent.html',
-		    	controller: adaythere.SelectDayModalInstanceCtrl,
-		    	resolve: {
-			    	marker_content: function () {
-				    	return $scope.marker_content;
-			    	}
-		    	},
-		    	scope: $scope 
-		});
-
-		modalInstance.result.then (function (marker_content) {
-			$scope.marker_content = marker_content;
-		}, function () {
-			console.log ('Modal dismissed at: ' + new Date ());
-		});
-	};
 
 	$scope.set_marker_at_place = function (location) {
 		var place = new ADT_Place ();
@@ -1681,9 +2124,9 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "$compile",
 		place.vicinity = location.vicinity;
 		place.comment = location.comment ? location.comment : "";
 
-		for (var index in $scope.markers) {
-			if (($scope.markers[index].location.latitude == place.location.latitude)
-					&& ($scope.markers[index].location.longitude == place.location.longitude)) {
+		for (var index in $scope.adt_markers.markers) {
+			if (($scope.adt_markers.markers[index].location.latitude == place.location.latitude)
+					&& ($scope.adt_markers.markers[index].location.longitude == place.location.longitude)) {
 				return;
 			}
 		}
@@ -1700,13 +2143,12 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "$compile",
 		    	map: googleMapService.get ()
 		});
 
-		
 		google.maps.event.addListener (place.marker, "click", function () {
-			$scope.open_marker_modal (place, true, true)
+			$scope.adt_marker_modal.open_marker_modal (place, true, true)
 
 		});
-		
-		$scope.markers.push (place);
+	
+		$scope.adt_markers.markers.push (place);
 	};
 
 	$scope.creation_remove = function (place) {
@@ -1787,7 +2229,7 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "$compile",
 				}
 			}
 
-			$scope.current_created_day.locality = $scope.location.locality;
+			$scope.current_created_day.full_locality = $scope.location.full_locality;
 
 			userDaysService.addDay ($scope.current_created_day);
 
@@ -2118,14 +2560,6 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "$compile",
 	};
 }]);
 
-adaythere.controller ("welcome_controller", ["$scope", function ($scope) {
-
-	$scope.open_welcome_doors = function () {
-		$("#welcome_to_left").hide ("slow");
-		$("#welcome_to_right").hide ("slow");
-	};
-}]);
-
 adaythere.AddPhotosModalInstanceCtrl = function ($scope, $modalInstance, $compile, photoService) {
 
 	$scope.collapsed = {};
@@ -2256,6 +2690,73 @@ adaythere.AddPhotosModalInstanceCtrl = function ($scope, $modalInstance, $compil
 	};
 };
 
+function ADT_MarkerModal (scope, map, modal) {
+	this.scope = scope;
+	this.map = map;
+	this.modal = modal;
+
+}
+
+
+
+ADT_MarkerModal.prototype.open_marker_modal = function (obj, show_add_button, arg) {
+	this.scope.marker_content = obj;
+
+	if (!this.scope.marker_content.vicinity) {
+		if (this.scope.marker_content.location && this.scope.marker_content.location.vicinity) {
+			this.scope.marker_content.vicinity = this.scope.marker_content.location.vicinity;
+		}
+	}
+
+	this.scope.marker_content.is_editable = (typeof arg != 'undefined' &&  typeof arg.is_editable != "undefined") ? arg.is_editable : arg;
+
+	var self = this;
+
+	var modalInstance = this.modal.open ({
+		templateUrl: 'markerModalContent.html',
+	    controller: adaythere.MarkerModalInstanceCtrl,
+	    resolve: {
+		marker_content: function () {
+			return self.scope.marker_content;
+		},
+	    	show_add_button: function () {
+		    return show_add_button;
+	    	},
+	    	map: function () {
+		    return self.map;
+	    	}
+	    },
+	    scope: self.scope 
+	});
+
+	modalInstance.result.then (function (place) {
+		if (place) {
+			console.log (place);
+			self.scope.current_created_day.places.push (place);
+			var sep = "";
+			if (self.scope.current_created_day.keywords.length > 0) {
+				sep = ", ";
+			}
+			for (var i = 0; i < place.types.length; ++i) {
+
+				if (place.types[i] == "establishment") {
+					continue;
+				}
+
+				if (self.scope.current_created_day.keywords.indexOf (place.types[i]) > -1) {
+					continue;
+				}
+
+				self.scope.current_created_day.keywords += sep;
+				self.scope.current_created_day.keywords += place.types[i];
+				sep = ", ";
+			}
+		}
+	}, function () {
+
+	});
+};
+
 adaythere.MarkerModalInstanceCtrl = function ($scope, $modalInstance, marker_content, show_add_button, map) {
 	$scope.show_add_button = show_add_button;
 
@@ -2280,8 +2781,9 @@ adaythere.MarkerModalInstanceCtrl = function ($scope, $modalInstance, marker_con
 
 		}
 
-		$scope.remove_marker (marker_content);
+		$scope.adt_markers.remove_marker (marker_content);
 
+		console.log (place.location.latitude, place.location.longitude);
 		place.marker = new google.maps.Marker ({
 			position: new google.maps.LatLng (place.location.latitude, place.location.longitude),
 			map: map
@@ -2291,7 +2793,7 @@ adaythere.MarkerModalInstanceCtrl = function ($scope, $modalInstance, marker_con
 		place.marker.setIcon (iconFile);
 
 		google.maps.event.addListener (place.marker, "click", function () {
-	        	$scope.open_marker_modal (place, false, true);
+	        	$scope.adt_marker_modal.open_marker_modal (place, false, true);
 	        });
 
 		var infowindow = new google.maps.InfoWindow ({
@@ -2306,24 +2808,51 @@ adaythere.MarkerModalInstanceCtrl = function ($scope, $modalInstance, marker_con
 	};
 };
 
-adaythere.SelectDayModalInstanceCtrl = function ($scope, $modalInstance, marker_content) {
-
-	$scope.marker_content = marker_content;
-
-	$scope.selectday_modal_ok = function () {
-		$modalInstance.close ($scope.marker_content);
-	};
-
-	$scope.selectday_modal_cancel = function () {
-		$modalInstance.dismiss ('cancel');
-	};
-};
 
 
 /*
  * jquery callbacks
  */
 
+
+var size_daysearch = function (w, h, small) {
+
+	var overlay_width = small ? w : 600;
+	$("#daysearch_overlay").css ({
+		"position": "absolute",
+		"width": overlay_width,
+		"left": (w - overlay_width) / 2
+	});
+
+	var width = $(".fieldset_daysearch").width ();
+
+	var max = 0;
+	$(".daysearch_label").each(function(){
+        	if ($(this).width() > max)
+            	max = $(this).width();    
+    	});
+    	$(".daysearch_label").width(max);
+
+	var input_width = $(".daysearch_input").width () - max;
+
+       	$(".daysearch_input").width (input_width);	
+
+	var overlay_height = $(".fieldset_daysearch").height ();
+	var overlay_top = (h / 2) - overlay_height;
+	$("#daysearch_overlay").css ("top", overlay_top);	
+};
+
+var size_daysearch_return = function (w, h, small) {
+	if (small || ((w * 3)/5.0 < 900)) {
+		$("#daysearch_return_display").css ("width", "100%");
+	} else {
+		$("#daysearch_return_display").css ("width", "60%");
+		$("#daysearch_return_display").css ("margin-left", "auto");
+		$("#daysearch_return_display").css ("margin-right", "auto");
+	}
+
+	$("#daysearch_return_display").css ("height", "80%");
+}
 
 $(window).resize (function () {
 	var path = window.location.pathname;
@@ -2343,6 +2872,9 @@ $(window).resize (function () {
 	} else {
 		var width = $(window).width ();
 		var height = $(window).height ();
+
+		size_daysearch (width, height, width < 900);
+		size_daysearch_return (width, height, width < 900);
 
 		if (width < 900) {
 			ADT_SidebarDisplayControlInstance.show_sidebar (false);
@@ -2386,11 +2918,16 @@ $(function () {
 		var width = $(window).width ();
 		var height = $(window).height ();
 
+		size_daysearch (width, height, width < 900);
+		size_daysearch_return (width, height, width < 900);
+
 		if (width < 900) {
 			ADT_SidebarDisplayControlInstance.show_sidebar (false);
 		}	
 
 		ADT_set_section_height (height);
+
+		
 	}
 });
 

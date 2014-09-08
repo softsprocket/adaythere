@@ -1,5 +1,6 @@
 
 from app.lib.components.element import Elements
+from app.adaythere import ADayThere
 
 class Modal (object):
 
@@ -89,25 +90,47 @@ class MarkerModal (Modal):
             <button class="btn btn-warning" ng-click="marker_modal_cancel ()">Cancel</button>""")
         self.add_footer_content (markerModalFooter)
 
-class SelectDayModal (Modal):
+class BecomeAContributorModal (Modal):
 
     def __init__ (self):
 
-        super (SelectDayModal, self).__init__ ("selectDayModalContent.html")
+        super (BecomeAContributorModal, self).__init__ ("becomeAContributorModalContent.html")
+
+        logged_in, db_user = ADayThere.logged_in_user ()
+        body_html = ""
+        if logged_in:
+            suggest_change = ""
+            if db_user.name == db_user.email:
+                suggest_change = """*Please, change your user name to something other then your email address to avoid spam.
+                                Only alphanumeric characters and the underscore (_) are accepted."""
+
+            if not logged_in:
+                body_html += "You must be logged in through Google before becoming a contributor"
+            else:
+                body_html += """
+                    <div>Thanks for choosing to become a contributor to the community. We ask that you don't use language that would make
+                        anyone's Grandmother blush. Be repectful of others who use "A Day There". By clicking the OK button you agree
+                        to allow "A Day There" to use the material you contribute and to abide by the rules.<br/><br/>
+                        Thank You!<br/>
+                    </div>
+                    <div id="contributor_name_choice" style="color:red;">{0}</div>
+                    <label for="contribute_google_nickname">Name:</label> 
+                    <input id="contribute_google_nickname" class="form-control" type='text' contributor-user-name value="{1}"></input>
+                    <input id="contribute_gotto_tools" type="checkbox">Go to create tools</input>
+                """.format (suggest_change, db_user.name)
+
         modalHeader = Elements ()
         modalHeader.append_to_element ("""
-            <h3>Select Day</h3>
+            <h3>Become A Contributor</h3>
         """)
         self.add_header_content (modalHeader)
         modalBody = Elements ()
-        modalBody.append_to_element ("""
-
-        """)
+        modalBody.append_to_element (body_html)
         self.add_body_content (modalBody)
         modalFooter = Elements ()
         modalFooter.append_to_element ("""
-            <button class="btn btn-primary" ng-click="selectday_modal_ok ()">OK</button>
-            <button class="btn btn-warning" ng-click="selectday_modal_cancel ()">Cancel</button>""")
+            <button class="btn btn-primary" ng-click="contribute_modal_ok ()">OK</button>
+            <button class="btn btn-warning" ng-click="contribute_modal_cancel ()">Cancel</button>""")
         self.add_footer_content (modalFooter)
 
 class AdminProfileModal (Modal):

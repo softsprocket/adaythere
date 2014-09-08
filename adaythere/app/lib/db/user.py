@@ -26,7 +26,6 @@ class User(ndb.Model):
 
     @classmethod
     def query_user_id(cls, user_id):
-        logging.info("getting " + user_id)
         return cls.query(cls.user_id == user_id).get()
 
     @classmethod
@@ -56,4 +55,13 @@ class User(ndb.Model):
 
         return stored_user
 
+    def update_username(self, user_name):
+        user = User.query_name(user_name)
+        if user == None:
+            self.name = user_name
+            self.put ()
+
+            return True
+
+        return False
 

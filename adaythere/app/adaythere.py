@@ -24,7 +24,7 @@ class ADayThere(Html5Document):
             return False, None
 
         db_user = User.query_user_id(str(user.user_id()))
-        if db_user is None or db_user.banned:
+        if db_user is None or db_user.banned or not db_user.has_tool_access:
             return False, db_user
 
         return True, db_user
@@ -33,10 +33,14 @@ class ADayThere(Html5Document):
     @classmethod
     def logged_in_user(cls):
         user = users.get_current_user()
-
         if user is None:
             return False, None
 
-        return True, user
+        db_user = User.query_user_id(str(user.user_id()))
+
+        if db_user is None:
+            db_user = User.record_from_google_user (user)
+                    
+        return True, db_user
 
 
