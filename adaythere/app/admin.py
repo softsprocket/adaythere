@@ -11,12 +11,12 @@ class ProfilesHandler (webapp2.RequestHandler):
 
     def get (self):
         
-        user = api_users.get_current_user ()
+        tool_user, db_user = ADayThere.tool_user ()
 
-        if user is None:
-            self.response.write ("No user")
-        elif not re.match (".*@adaythere.com?", str (user.email)):
-            self.response.write ("Wrong user")
+        if not tool_user or not ADayThere.admin_user (db_user):
+            self.response.status = 401 
+            self.response.write ("Unauthorized")
+            return
 
         query = User.query ()
         if 'name' in self.request.GET.keys ():
@@ -64,6 +64,14 @@ class ProfilesHandler (webapp2.RequestHandler):
 
 
     def post (self):
+        
+        tool_user, db_user = ADayThere.tool_user ()
+
+        if not tool_user or not ADayThere.admin_user (db_user):
+            self.response.status = 401 
+            self.response.write ("Unauthorized")
+            return
+
         user = json.loads (self.request.body)
         record = User.query_user_id (user['user_id'])
         

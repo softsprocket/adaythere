@@ -73,7 +73,8 @@ class ToolsHandler (webapp2.RequestHandler):
             { "src":"js/angular/angular-route.min.js" },
             { "src":"js/ui-bootstrap-tpls-0.10.0.min.js" },
             { "src": maps.get_script_src () },
-            { "src":"js/adaythere.js" }
+            { "src":"js/adaythere.js" },
+            { "src":"https://apis.google.com/js/platform.js", "async":None, "defer":None }
         ])
 
         db_user = None
@@ -101,7 +102,7 @@ class ToolsHandler (webapp2.RequestHandler):
                 navView = LoggedInNavView (db_user)
                 logged_in = True
 
-
+            
         adminProfileModal = AdminProfileModal ()
         contributorModal = BecomeAContributorModal ()
 
@@ -138,6 +139,7 @@ class ToolsHandler (webapp2.RequestHandler):
         adaythere.close_element ("section")
         
         adaythere.open_element ("section", { "id":"welcome_to_right" })
+        adaythere.append_to_element ("""<div id="google_like_main" style="float:right;"> <div class="g-plusone" data-size="medium" data-annotation="inline" data-width="250"></div></div>""")
         adaythere.close_element ("section")
 
         adaythere.open_element ("section", { "id": "daysearch_overlay" })
@@ -169,306 +171,6 @@ class ToolsHandler (webapp2.RequestHandler):
 
         self.response.write (adaythere.get ())
 
-class HomeHandler (webapp2.RequestHandler):
-    def get (self):
-
-        adaythere = ADayThere ()
-        adaythere.add_meta_tags ([
-            { "charset":"UTF-8" },
-            { "http-equiv":"X-UA-Compatible", "content":"yes" },
-            { "name":"apple-mobile-web-app-capable", "content":"A social media site that celebrates the joys of place." },
-            { "name":"viewport", "content":"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" },
-            { "name":"description", "content":"A social media site that celebrates the joys of place." },
-            { "name":"viewport", "content":"initial-scale=1"}
-        ])
-
-        adaythere.add_links ([
-            { "rel":"stylesheet", "href":"css/bootstrap.css" },
-            { "rel":"stylesheet", "href":"css/flat-ui.css" },
-            { "rel":"stylesheet", "href":"css/icon-font.css" },
-            { "rel":"stylesheet", "href":"css/animations.css" },
-            { "rel":"stylesheet", "href":"css/home.css" }
-        ])
-
-
-        maps = Maps ()
-
-        adaythere.add_script_tags_for_body ([
-            { "src":"js/jquery-1.11.0-beta2.js" },
-            { "src":"js/angular/angular.min.js" },
-            { "src":"js/angular/angular-route.min.js" },
-            { "src":"js/ui-bootstrap-tpls-0.10.0.min.js" },
-            { "src":"js/bootstrap.min.js" },
-            { "src":"js/flatui-radio.js" },
-            { "src":"js/flatui-checkbox.js" },
-            { "src":"js/ui-bootstrap-tpls-0.10.0.min.js" },
-            { "src":"js/jquery.scrollTo-1.4.3.1-min.js" },
-            { "src":"js/modernizr.custom.js" },
-            { "src":"js/page-transitions.js" },
-            { "src":"js/easing.min.js" },
-            { "src":"js/startup-kit.js" },
-            { "src": maps.get_script_src () },
-            { "src":"js/adaythere.js"}
-        ])
-
-        adaythere.open_element ("div", {"class":"page-wrapper"})
-
-        header_display = """
-                    <!-- header -->
-                    <header class="header">
-                        <div class="container">
-                            <div class="row">
-                                <nav class="navbar col-sm-12 navbar-fixed-top" role="navigation">
-                                    <div class="navbar-header">
-                                        <button type="button" class="navbar-toggle"></button>
-                                        <a class="brand" href="#"><img src="/icons/logo@2x.png" width="260" height="60" alt=""></a>
-                                    </div>
-                                    <div class="collapse navbar-collapse pull-right">
-                                        <ul class="nav pull-left">
-                                            <li><a href="#about">ABOUT US</a></li>
-                                            <li><a href="#day_search">FIND A DAY</a></li>
-                                            <li><a href="/tools">CREATE A DAY</a></li>
-                                            <li><a href="#contact">CONTACT</a></li>
-                                        </ul>
-                                        <form class="navbar-form pull-left">
-                                            <a class="btn btn-primary" href="#">SIGN IN</a>
-                                        </form>
-                                    </div>
-                                </nav>
-                            </div>
-                        </div>
-                        <div class="header-background"></div>
-                    </header>
-                    <section class="header-sub">
-                        <div class="background">&nbsp;</div>
-                        <div class="container">
-                            <div class="row">
-                                <div class="col-sm-6">
-                                    <h3>Your Day, Your Way</h3>
-                                    <p>Let us help you create the perfect day</p>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-        """
-
-        adaythere.open_element ("header", { "id":"page_header" })\
-            .append_to_element (header_display)\
-            .close_element ("header")
-
-        days_display_element = Elements ()
-        days_display_element.open_element ("div", { "class": "container" })
-        days_display_element.append_to_element ("""
-                <h3>
-                    Check out these amazing days that people have created.
-                </h3>
-        """)
-
-        
-        days_collection_1 = [
-                { "bgimage": "images/placeholder/img-5.png", "image": "images/placeholder/img-5.png", "title": "Day 1", "text": "Fine dining, Gardens and historic sites.", "ani_processed": False },
-                { "bgimage": "images/placeholder/img-5.png", "image": "images/placeholder/img-5.png", "title": "Day 2", "text": "Fine dining, Gardens and historic sites.", "ani_processed": False },
-                { "bgimage": "images/placeholder/img-5.png", "image": "images/placeholder/img-5.png", "title": "Day 3", "text": "Fine dining, Gardens and historic sites.", "ani_processed": False }
-        ]
-
-
-        days_collection_2 = [
-                { "bgimage": "images/placeholder/img-5.png", "image": "images/placeholder/img-5.png", "title": "Day 4", "text": "Fine dining, Gardens and historic sites.", "ani_processed": True },
-                { "bgimage": "images/placeholder/img-5.png", "image": "images/placeholder/img-5.png", "title": "Day 5", "text": "Fine dining, Gardens and historic sites.", "ani_processed": True },
-                { "bgimage": "images/placeholder/img-5.png", "image": "images/placeholder/img-5.png", "title": "Day 6", "text": "Fine dining, Gardens and historic sites.", "ani_processed": True }
-        ]
-
-        random_days = Day.query_random (6)
-
-        
-        photo_base_url = "/photos?action=img&title={0}"
-        rdnum = len (random_days) 
-
-        for i in range (0, rdnum):
-            item = None
-            if (i >= 3):
-                item = days_collection_2[i - 3]
-            else:
-                item = days_collection_1[i]
-            
-            day = random_days[i]
-            item['title'] = day.title
-            item['text'] = day.description
-            if day.photos is not None and (len (day.photos) > 0):
-                purl = photo_base_url.format (day.photos[0].title)
-                item['bgimage'] = purl
-                item['image'] = purl
-
-
-        days_display_element.open_element ("div", { "class": "days" })
-        for each in days_collection_1:
-            day_display = DayDisplay (each["ani_processed"])
-            photo_display = DayPhotoDisplay (each["bgimage"], each["image"])
-            info_display = DayInfoDisplay (each["title"], each["text"])
-            day_display.append_to_element (photo_display.get ())
-            day_display.append_to_element (info_display.get ())
-
-            days_display_element.append_to_element (day_display.get ())
-
-        days_display_element.close_element ("div")
-
-        days_display_element.open_element ("div", { "class": "days" })
-        for each in days_collection_2:
-            day_display = DayDisplay (each["ani_processed"])
-            photo_display = DayPhotoDisplay (each["bgimage"], each["image"])
-            info_display = DayInfoDisplay (each["title"], each["text"])
-            day_display.append_to_element (photo_display.get ())
-            day_display.append_to_element (info_display.get ())
-
-            days_display_element.append_to_element (day_display.get ())
-
-        days_display_element.close_element ("div")
-
-        days_display_element.close_element ("div")
-
-        days_display =  days_display_element.get ()
-
-
-        adaythere.open_element ("section", {"id":"day_search", "class": "day-search"})\
-            .append_to_element (days_display)\
-            .close_element ("section")
-
-        about_display = """
-            <div id="pt-2" class="page-transitions pt-perspective">
-                <div class="pt-page pt-page-1 pt-page-current bg-clouds">
-                    <div class="container">
-                        <div class="box-icon">
-                            <a class="fui-arrow-left pt-control-prev" href="#"> </a>
-                            <span class="icon fui-gear"> </span>
-                            <a class="fui-arrow-right pt-control-next" href="#"> </a>
-                        </div>
-                        <div class="row">
-                            <div class="col-sm-6 col-sm-offset-3">
-                                <h3>About Us</h3>
-                                <div class="article-info">
-                                    <span><span class="fui-user"> </span> GREG MARTIN</span>
-                                    <span><span class="fui-time"> </span> 20 MAY</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-sm-8 col-sm-offset-2">
-                                <p style="margin: 0">
-                                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque ac tincidunt arcu. Maecenas vel tellus ut magna bibendum elementum. Donec suscipit pharetra ligula id consectetur. Sed id erat orci. Donec nec metus imperdiet tortor pulvinar mattis. Proin ut erat ac est ultrices feugiat. Integer hendrerit ullamcorper tellus, at tempor odio tristique vitae. Curabitur tincidunt risus justo, tristique fermentum quam molestie non. Cras bibendum eget quam quis congue. In suscipit mollis magna id tincidunt. Curabitur sit amet ligula vitae libero auctor ultrices. Nam vitae tortor tristique, tempus nulla ultricies, malesuada augue. Quisque convallis tristique sem, et volutpat enim tempus sed. Ut lobortis pellentesque neque ac feugiat.
-                                    <br><br>
-                                    Aenean et suscipit ante. Integer malesuada tempus vestibulum. Nulla posuere adipiscing lectus vitae tristique. Proin venenatis sodales laoreet. Nam dictum leo ac nibh porta, vestibulum sollicitudin risus lacinia. Integer ac porta risus, ac feugiat orci. Aliquam malesuada dolor non laoreet convallis. Duis mauris massa, tincidunt et volutpat nec, posuere et ante. Vivamus pulvinar ante vel augue pellentesque sodales. Vestibulum molestie euismod ultrices. Pellentesque nunc diam, commodo sed ligula ultricies, dapibus hendrerit massa. Nam varius tortor tortor, rutrum consequat nibh feugiat eget. Donec aliquet interdum nisl eget vulputate.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="pt-page pt-page-2 bg-clouds">
-                    <div class="container">
-                        <div class="box-icon">
-                            <a class="fui-arrow-left pt-control-prev" href="#"> </a>
-                            <span class="icon fui-gear"> </span>
-                            <a class="fui-arrow-right pt-control-next" href="#"> </a>
-                        </div>
-                        <div class="row">
-                            <div class="col-sm-6 col-sm-offset-3">
-                                <h3>Our Mission</h3>
-
-                                <div class="article-info">
-                                    <span><span class="fui-user"> </span> CHRIS MARTIN</span>
-                                    <span><span class="fui-time"> </span> 10 MAY</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-sm-8 col-sm-offset-2">
-                                <p style="margin: 0">
-                                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque ac tincidunt arcu. Maecenas vel tellus ut magna bibendum elementum. Donec suscipit pharetra ligula id consectetur. Sed id erat orci. Donec nec metus imperdiet tortor pulvinar mattis. Proin ut erat ac est ultrices feugiat. Integer hendrerit ullamcorper tellus, at tempor odio tristique vitae. Curabitur tincidunt risus justo, tristique fermentum quam molestie non. Cras bibendum eget quam quis congue. In suscipit mollis magna id tincidunt. Curabitur sit amet ligula vitae libero auctor ultrices. Nam vitae tortor tristique, tempus nulla ultricies, malesuada augue. Quisque convallis tristique sem, et volutpat enim tempus sed. Ut lobortis pellentesque neque ac feugiat.
-                                    <br><br>
-                                    Aenean et suscipit ante. Integer malesuada tempus vestibulum. Nulla posuere adipiscing lectus vitae tristique. Proin venenatis sodales laoreet. Nam dictum leo ac nibh porta, vestibulum sollicitudin risus lacinia. Integer ac porta risus, ac feugiat orci. Aliquam malesuada dolor non laoreet convallis. Duis mauris massa, tincidunt et volutpat nec, posuere et ante. Vivamus pulvinar ante vel augue pellentesque sodales. Vestibulum molestie euismod ultrices. Pellentesque nunc diam, commodo sed ligula ultricies, dapibus hendrerit massa. Nam varius tortor tortor, rutrum consequat nibh feugiat eget. Donec aliquet interdum nisl eget vulputate.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        """
-
-        adaythere.open_element ("section", {"id":"about", "class":"about-sections"})\
-            .append_to_element (about_display)\
-            .close_element ("section")
-
-        contact_display = """
-            <div class="container">
-                <div class="row">
-                    <div class="col-sm-5">
-                        <h3>Get in touch with us</h3>
-                        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
-                        <div class="links">
-                            <a href="#"><span class="fui-phone"></span> +1 250 555 5555</a>
-                            <br>
-                            <a href="#"><span class="fui-mail"></span> info@adaythere.com</a>
-                        </div>
-                        <h6>Where to find us</h6>
-                        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
-                        <div class="map">
-                            <!--map-->
-                            <iframe width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src="https://maps.google.com/?ie=UTF8&amp;t=m&amp;ll=48.4230037,-123.3692806&amp;spn=0.04554,0.072956&amp;z=12&amp;output=embed"></iframe>
-                        </div>
-                    </div>
-                    <div class="col-sm-6 col-sm-offset-1">
-                        <h3>You can mail us</h3>
-                        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
-                        <form>
-                            <label class="h6">Name / Last Name</label>
-                            <input type="text" class="form-control">
-                            <label class="h6">E-mail</label>
-                            <input type="text" class="form-control">
-                            <label class="h6">Message</label>
-                            <textarea rows="7" class="form-control"></textarea>
-                            <button type="submit" class="btn btn-primary"><span class="fui-mail"></span>
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        """
-
-        adaythere.open_element ("section", {"id":"contact", "class":"contacts"})\
-            .append_to_element (contact_display)\
-            .close_element ("section")
-
-        footer_display = """
-            <div class="container">
-                <a href="#"><span class="fui-home"> </span></a>
-                <nav>
-                    <ul>
-                        <li><a href="#about">ABOUT US</a></li>
-                        <li><a href="#day_search">FIND A DAY</a></li>
-                        <li class="scroll-btn"><a href="#" class="scroll-top fui-arrow-up"> </a></li>
-                        <li><a href="/tools">CREATE A DAY</a></li>
-                        <li><a href="#contact">CONTACT</a></li>
-                    </ul>
-                </nav>
-                <div class="social-btns">
-                    <a href="#">
-                        <div class="fui-facebook"></div>
-                        <div class="fui-facebook"></div>
-                    </a>
-                    <a href="#">
-                        <div class="fui-twitter"></div>
-                        <div class="fui-twitter"></div>
-                    </a>
-                </div>
-            </div>
-        """
-
-        adaythere.open_element ("footer", {"id":"page_footer", "class":"footer"})\
-            .append_to_element (footer_display)\
-            .close_element ("footer")
-
-        adaythere.close_element ("div")
-
-        self.response.write (adaythere.get ())
 
 class MapTools ():
 
@@ -533,7 +235,6 @@ class MapTools ():
 app = webapp2.WSGIApplication ([
     ('/', ToolsHandler),
     ('/tools', ToolsHandler),
-    ('/home', HomeHandler),
     ('/photos', app.photos.PhotosHandler),
     ('/days', app.days.DayHandler),
     ('/login', app.login.LoginHandler),

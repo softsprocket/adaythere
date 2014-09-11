@@ -42,7 +42,8 @@ class DaySearch (Elements):
 
         self.append_to_element ("""
             <p>
-            <button ng-click="executeSearch()">Search</input>
+            <button ng-click="executeSearch()">Search</button>
+            <button ng-click="getRandomDays()" style="float:right;">Random Days</button>
         """)
 
         self.close_element ("fieldset")
@@ -59,6 +60,7 @@ class DaySearch (Elements):
                     <p>{{ day.description }}</p>
                     <div collapse="day.is_collapsed">
                         <div class="well well-lg">
+                            <div class="g-plus" data-action="share" data-href="//adaythere.com/locality_days?user_id={{ day.userid }}&title={{ day.title }}></div>
                             <label>Locality: {{ day.full_locality }} </label><br>
                             <label for="day_keywords">Keywords</label>
                             <input id="day_keywords" class="form-control" type='text' ng-disabled="true" ng-model='day.keywords'></input>
@@ -84,6 +86,9 @@ class DaySearch (Elements):
                 </div>
             </div>
             <button id="dayssearch_show_map_button{{$index}}" type="button" ng-click="show_map_of (day, $index)">View Map</button>
+            <button ng-click="open_google_plus_window (day.userid, day.title)">Share
+                <img src="https://www.gstatic.com/images/icons/gplus-16.png" alt="Share on Google+"/>
+            </button>
         """)
 
         dayview_rater = DayViewRater ("day")

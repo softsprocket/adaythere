@@ -41,20 +41,8 @@ class Day (ndb.Model):
         return cls.query (cls.userid == userid, cls.title == title)
 
     @classmethod
-    def query_random (cls, num_samples, **kwargs):
-        keys = None
-        
-        full_locality = kwargs.get ('full_locality')
-        minimum_rating = kwargs.get ('minimum_rating')
-
-        if full_locality is not None and minimum_rating is not None:
-            keys = cls.query (cls.full_locality == full_locality, averageReview >= minimum_rating).fetch (keys_only=True)
-        elif full_locality is not None:
-            keys = cls.query (cls.full_locality == full_locality).fetch (keys_only=True)
-        elif minimum_rating is not None:
-            keys = cls.query (cls.averageReview >= minimum_rating).fetch (keys_only=True)
-        else:
-            keys = cls.query ().fetch (keys_only=True)
+    def query_random (cls, num_samples):
+        keys = cls.query ().fetch (keys_only=True)
 
         if (len (keys) < num_samples):
             num_samples = len (keys)
