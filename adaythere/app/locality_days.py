@@ -9,6 +9,29 @@ class LocalityDaysHandler (webapp2.RequestHandler):
 
     def get (self):
 
+        rand = self.request.get ('random', None)
+        if rand is not None:
+            days = Day.query_random (20)
+            self.return_days (days, None, False)    
+            return
+
+        print 'Here'
+        userid = self.request.get ('user_id', None)
+        if userid is not None:
+            title = self.request.get ('title', None)
+
+            if title is not None:
+                day = Day.query_user_title (userid, title).get ()
+                print 'day >>>>>>>>', day
+                days = []
+                days.append (day)
+            else:
+                days = Day.query_user (userid).fetch ()
+                
+            self.return_days (days, None, False)
+            return
+
+
         wordstr = self.request.get ('words', None)
         words = None
 
@@ -34,15 +57,12 @@ class LocalityDaysHandler (webapp2.RequestHandler):
             args['all_words'] = self.request.get ('all_words')
 
         keywords = self.request.get ('keywords', None)
-        print keywords
 
         keyhash = None
         if keywords is not None:
             word_list = sorted (map (lambda x: x.strip (), keywords.split (',')))
             keyhash = hashlib.sha256 (str (word_list)).hexdigest ()
        
-        print keyhash
-
         if keyhash is None:
             if words is None:
                 days, cursor, more = Day.query_days (args)
@@ -53,9 +73,11 @@ class LocalityDaysHandler (webapp2.RequestHandler):
 
         if cursor is not None:
             cursor = cursor.urlsafe ()
-      
-        print days
 
+        self.return_days (days, cursor, more)
+
+
+    def return_days (self, days, cursor, more):
         json_days = []
         for each in days:
             json_days.append (json.dumps (each.to_dict ()))
@@ -65,7 +87,8 @@ class LocalityDaysHandler (webapp2.RequestHandler):
             'cursor': cursor,
             'more': more
         };
-
+        
+        self.response.status = 200 
         self.response.write (json.dumps (return_vals))
                         
 

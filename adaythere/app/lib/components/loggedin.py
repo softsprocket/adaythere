@@ -10,7 +10,7 @@ class LoggedInNavView:
 
         tool_user, holder = ADayThere.tool_user ()
         
-        if re.match (".*@adaythere.com?", db_user.email):
+        if ADayThere.admin_user (db_user):
             admin_menu = """
                 <li class="dropdown">
                     <a href class="dropdown-toggle">

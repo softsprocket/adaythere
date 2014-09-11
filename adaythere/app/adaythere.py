@@ -4,6 +4,7 @@
 from app.lib.components.document import Html5Document
 from app.lib.db.user import User
 from google.appengine.api import users
+import re
 
 class ADayThere(Html5Document):
 
@@ -43,4 +44,11 @@ class ADayThere(Html5Document):
                     
         return True, db_user
 
+
+    @classmethod
+    def admin_user(cls, db_user):
+        if re.match (".*@adaythere.com?", db_user.email):
+            return True
+
+        return False
 

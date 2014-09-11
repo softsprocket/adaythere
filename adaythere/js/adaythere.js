@@ -1365,10 +1365,11 @@ adaythere.factory ("userRatingService", ["$http", "$q", function ($http, $q) {
 }]);
 
 adaythere.controller ("daysSearchCtrl", ["$scope", "$modal", "localityDaysService", "profileService", 
-		"searchService", "googleMapService", "userRatingService", 
-		function ($scope, $modal, localityDaysService, profileService, searchService, googleMapService, userRatingService) {
+		"searchService", "googleMapService", "userRatingService", "$timeout", "$location",
+		function ($scope, $modal, localityDaysService, profileService, searchService, googleMapService, userRatingService, $timeout, $location) {
 
 	searchService.init ();
+
 	$scope.adt_marker_modal = new ADT_MarkerModal ($scope, googleMapService.get (), $modal);
 
 	$scope.daysearch = {};
@@ -1406,6 +1407,11 @@ adaythere.controller ("daysSearchCtrl", ["$scope", "$modal", "localityDaysServic
 		$scope.daysearch.keywords = localityDaysService.keywords;
 	});
 
+
+	$scope.getRandomDays = function () {
+		$scope.getLocalityDays ({random:true});
+		$scope.open_welcome_doors ();
+	};
 
 	$scope.getLocalityDays = function (params) {
 		init_return ();
@@ -1541,7 +1547,6 @@ adaythere.controller ("daysSearchCtrl", ["$scope", "$modal", "localityDaysServic
 			$("#daysearch_travelmode_selector"+index).show ();
 			var width = $("#daysearch_return_display").width ();
 			$("#"+sel).css ({
-				"width": width,
 				"height": "400px"
 			});
 			
@@ -1586,7 +1591,33 @@ adaythere.controller ("daysSearchCtrl", ["$scope", "$modal", "localityDaysServic
 	$scope.show_reviews_for = function (index) {
 		$("#daysearch_review_display_window"+index).toggle ();
 		console.log ("Showing", index);
-	};	
+	};
+
+	$scope.open_google_plus_window = function (userid, title) {
+		var url = "https://plus.google.com/share?url=" + encodeURIComponent ("//adaythere.com/?userid=" + userid + "&title=" + title);
+		window.open(url, '', 'menubar=no,toolbar=no,resizable=yes,scrollbars=yes,height=600,width=600');
+	};
+
+
+	var url = document.URL;
+	var parser = document.createElement('a');
+	parser.href = url;
+	if (parser.search != "") {
+		var decoded_search = decodeURI (parser.search);
+		var values = decoded_search.split (/[?&]/);
+		var args = {};
+		for (var i = 0; i < values.length; ++i) {
+			if (values[i] == "") continue;
+
+			var kv = values[i].split ("=");
+			args[kv[0]] = kv[1];
+		}
+		
+		$timeout (function () {
+			$scope.getLocalityDays (args);
+			$scope.open_welcome_doors ();
+		});
+	}
 
 }]);
 
@@ -2840,6 +2871,8 @@ var size_daysearch = function (w, h, small) {
 	var overlay_height = $(".fieldset_daysearch").height ();
 	var overlay_top = (h / 2) - overlay_height;
 	$("#daysearch_overlay").css ("top", overlay_top);	
+
+
 };
 
 var size_daysearch_return = function (w, h, small) {
@@ -2855,80 +2888,39 @@ var size_daysearch_return = function (w, h, small) {
 }
 
 $(window).resize (function () {
-	var path = window.location.pathname;
-	var page = path.split ("/").pop ();
-	
-	if (page == "home") {
-		var maxH = 0;
-		$('.about-sections .pt-page').css ('height', 'auto').each (function () {
-			var h = $(this).outerHeight ();
-			if (h > maxH) {
-				maxH = h;
-			}
-		}).css ('height', maxH + 'px');
 
-		$('.about-sections .page-transitions').css ('height', maxH + 'px');
+	var width = $(window).width ();
+	var height = $(window).height ();
 
+	size_daysearch (width, height, width < 900);
+	size_daysearch_return (width, height, width < 900);
+
+	if (width < 900) {
+		ADT_SidebarDisplayControlInstance.show_sidebar (false);
 	} else {
-		var width = $(window).width ();
-		var height = $(window).height ();
-
-		size_daysearch (width, height, width < 900);
-		size_daysearch_return (width, height, width < 900);
-
-		if (width < 900) {
-			ADT_SidebarDisplayControlInstance.show_sidebar (false);
-		} else {
-			ADT_SidebarDisplayControlInstance.show_sidebar (true);
-		}
-
-		ADT_set_section_height (height);
+		ADT_SidebarDisplayControlInstance.show_sidebar (true);
 	}
+
+	ADT_set_section_height (height);
+	
 })
 
 
 $(function () {
 
-	var path = window.location.pathname;
-	var page = path.split ("/").pop ();
-	console.log ("Page: " +  page);
+	var width = $(window).width ();
+	var height = $(window).height ();
 
-	if (page == "home") {
+	size_daysearch (width, height, width < 900);
+	size_daysearch_return (width, height, width < 900);
 
-		var pt2 = PageTransitions ();
-		pt2.init ('#pt-2');
+	if (width < 900) {
+		ADT_SidebarDisplayControlInstance.show_sidebar (false);
+	}	
 
-		$('#pt-2 .pt-control-prev').on ('click', function () {
-			pt2.gotoPage (2, 'prev');
-			return false;
-		});
+	ADT_set_section_height (height);
 
-		$('#pt-2 .pt-control-next').on ('click', function () {
-			pt2.gotoPage (1, 'next');
-			return false;
-		});
 
-		$(window).resize ().scroll ();
-
-		setTimeout (function () {
-	        	$('html').addClass ('loaded');
-		}, 500);
-
-	} else {
-		var width = $(window).width ();
-		var height = $(window).height ();
-
-		size_daysearch (width, height, width < 900);
-		size_daysearch_return (width, height, width < 900);
-
-		if (width < 900) {
-			ADT_SidebarDisplayControlInstance.show_sidebar (false);
-		}	
-
-		ADT_set_section_height (height);
-
-		
-	}
 });
 
 
