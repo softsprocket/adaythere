@@ -60,7 +60,7 @@ class DaySearch (Elements):
                     <p>{{ day.description }}</p>
                     <div collapse="day.is_collapsed">
                         <div class="well well-lg">
-                            <div class="g-plus" data-action="share" data-href="//adaythere.com/locality_days?user_id={{ day.userid }}&title={{ day.title }}></div>
+                            <div class="g-plus" data-action="share" data-href="//www.adaythere.com/locality_days?user_id={{ day.userid }}&title={{ day.title }}></div>
                             <label>Locality: {{ day.full_locality }} </label><br>
                             <label for="day_keywords">Keywords</label>
                             <input id="day_keywords" class="form-control" type='text' ng-disabled="true" ng-model='day.keywords'></input>

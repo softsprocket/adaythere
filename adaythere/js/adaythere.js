@@ -1594,7 +1594,7 @@ adaythere.controller ("daysSearchCtrl", ["$scope", "$modal", "localityDaysServic
 	};
 
 	$scope.open_google_plus_window = function (userid, title) {
-		var url = "https://plus.google.com/share?url=" + encodeURIComponent ("//adaythere.com/?userid=" + userid + "&title=" + title);
+		var url = "https://plus.google.com/share?url=" + encodeURIComponent ("//www.adaythere.com/?userid=" + userid + "&title=" + title);
 		window.open(url, '', 'menubar=no,toolbar=no,resizable=yes,scrollbars=yes,height=600,width=600');
 	};
 
