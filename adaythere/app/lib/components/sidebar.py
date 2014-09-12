@@ -102,12 +102,13 @@ class CreateADayView:
     def __init__ (self, logged_in):
         if logged_in:
             self.html = """
+            <form>
             <fieldset style="padding:6px">
                 <label>Locality: {{ current_created_day.full_locality }} </label><br> 
                 <label for="creation_title">Title</label>
                 <input id="creation_title" class="form-control" type='text' ng-model='current_created_day.title'></input>
                 <label for="creation_keywords">Keywords</label>
-                <input id="creation_keywords" class="form-control" type='text' ng-model='current_created_day.keywords'></input>
+                <input id="creation_keywords" class="form-control" type='text' ng-model='current_created_day.keywords' data-role='tagsinput'></input>
                 <label for="creation_descrip">Comments</label>
                 <textarea id="creation_descrip"  class="form-control" ng-model='current_created_day.description'></textarea>
                 <fieldset>
@@ -139,6 +140,7 @@ class CreateADayView:
                 <button id="creation_clear_button" type="button" ng-click="creation_clear (true)">Clear</button>
                 <button id="creation_photo_button" type="button" ng-click="open_add_photo_modal ()">Add photos</button>
             </fieldset>
+            </form>
             """
         else:
             self.html = """
@@ -166,7 +168,7 @@ class MyDaysView:
                         <div class="well well-lg">
                             <label>Locality: {{ day.full_locality }} </label><br>
                             <label for="day_keywords">Keywords</label>
-                            <input id="day_keywords" class="form-control" type='text' ng-disabled="true" ng-model='day.keywords'></input>
+                            <input id="day_keywords" class="form-control" type='text' ng-disabled="!day_is_editable (day)" ng-model='day.keywords' data-role='tagsinput'></input>
                             <label for="day_description">Description</label>
                             <input id="day_description" class="form-control" type='text' ng-disabled="!day_is_editable (day)" ng-model='day.description'></input>
             """)
@@ -202,7 +204,7 @@ class MyDaysView:
                             <div class="well well-lg">
                                 <label>Locality: {{ day.full_locality }} </label><br>
                                 <label for="deleted_day_keywords">Keywords</label>
-                                <input id="deleted_day_keywords" class="form-control" type='text' ng-disabled="true" ng-model='day.keywords'></input>
+                                <input id="deleted_day_keywords" class="form-control" type='text' ng-disabled="!day_is_editable (day)" ng-model='day.keywords' data-role='tagsinput'></input>
                                 <label for="deleted_day_description">Description</label>
                                 <input id="deleted_day_description" class="form-control" type='text' ng-disabled="!day_is_editable (day)" ng-model='day.description'></input>
             """)
