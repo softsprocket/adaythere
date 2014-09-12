@@ -2221,7 +2221,7 @@ adaythere.controller ("sidebarCtrl", ["$scope", "$modal", "$http", "$compile",
 			var creation_keywords = $("#creation_keywords");
 			var pre_border = creation_keywords.css ("border-color");
 			creation_keywords.css ({ "text-shadow": "0 0 10px red", "border-color": "red" });
-			creation_keywords.val ("Comment required");
+			creation_keywords.val ("Keywords required");
 			creation_keywords.focus (function () {
 				creation_keywords.val ("");
 				creation_keywords.css ({ "text-shadow": "none", "border-color": pre_border });

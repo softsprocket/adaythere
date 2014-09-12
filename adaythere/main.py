@@ -61,7 +61,8 @@ class ToolsHandler (webapp2.RequestHandler):
 
         adaythere.add_links ([
             { "rel":"stylesheet", "href":"css/bootstrap.css" },
-            { "rel":"stylesheet", "href":"css/adaythere.css" }
+            { "rel":"stylesheet", "href":"css/adaythere.css" },
+            { "rel":"stylesheet", "href":"css/bootstrap-tagsinput.css" }
         ])
 
 
@@ -72,6 +73,7 @@ class ToolsHandler (webapp2.RequestHandler):
             { "src":"js/angular/angular.min.js" },
             { "src":"js/angular/angular-route.min.js" },
             { "src":"js/ui-bootstrap-tpls-0.10.0.min.js" },
+            { "src":"js/bootstrap-tagsinput.min.js" },
             { "src": maps.get_script_src () },
             { "src":"js/adaythere.js" },
             { "src":"https://apis.google.com/js/platform.js", "async":None, "defer":None }
