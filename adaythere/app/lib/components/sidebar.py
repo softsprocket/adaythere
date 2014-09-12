@@ -107,7 +107,7 @@ class CreateADayView:
                 <label for="creation_title">Title</label>
                 <input id="creation_title" class="form-control" type='text' ng-model='current_created_day.title'></input>
                 <label for="creation_keywords">Keywords</label>
-                <input id="creation_keywords" class="form-control" type='text' ng-model='current_created_day.keywords' ng-disabled="true"></input>
+                <input id="creation_keywords" class="form-control" type='text' ng-model='current_created_day.keywords'></input>
                 <label for="creation_descrip">Comments</label>
                 <textarea id="creation_descrip"  class="form-control" ng-model='current_created_day.description'></textarea>
                 <fieldset>
