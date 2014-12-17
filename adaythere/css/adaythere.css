@@ -126,6 +126,21 @@ section#find_a_day {
 	background-size: cover;
 }
 
+section#advertize_overlay {
+	z-index:10;
+}
+
+section#send_email {
+	position:absolute;
+	width:100%;
+	z-index:1;
+	background-color:#C8C8C8;
+	background-image:url('../img/emarld_lake_syled.png');
+	background-repeat: no-repeat;
+	background-position: left top;
+	background-size: cover;
+}
+
 #daysearch_return_display {
 	padding:4px;
 	margin-top:4px;

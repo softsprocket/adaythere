@@ -80,7 +80,7 @@ class DaySearch (Elements):
             <br>
             <div id="daysearch_review_display_window{{$index}}" style="display:none; z-index:20; width:50%; height:50%; overflow-y:auto;" >
                 <div ng-repeat="review in daysearch_returned.reviews[$index]">
-                    <p>Posted by: {{ review.commenters_id }}</p>
+                    <p>Posted by: {{ review.commenters_name }}</p>
                     <rating value="review.rating" max="10"></rating><br/>
                     <p>{{ review.text }}</p><br/>
                 </div>

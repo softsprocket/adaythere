@@ -6,7 +6,7 @@ class UserComment (ndb.Model):
     title = ndb.StringProperty ()
     rating = ndb.IntegerProperty () 
     text = ndb.StringProperty ()
-    commenters_id = ndb.StringProperty ()
+    commenters_name = ndb.StringProperty ()
 
     @classmethod
     def query_comments (cls, userid, title):
@@ -14,7 +14,11 @@ class UserComment (ndb.Model):
 
     
     @classmethod
-    def query_previous_comment (cls, commenters_id, userid, title):
-        return cls.query (cls.commenters_id == commenters_id, cls.userid == userid, cls.title == title)
+    def query_previous_comment (cls, commenters_name, userid, title):
+        return cls.query (cls.commenters_name == commenters_name, cls.userid == userid, cls.title == title)
+
+    @classmethod
+    def query_commenter (cls, commenters_name):
+        return cls.query (cls.commenters_name == commenters_name)
 
 

@@ -3,14 +3,13 @@ import json
 from app.lib.db.user_comments import UserComment
 from app.adaythere import ADayThere
 from app.lib.db.days import Day
+from app.lib.db.user import User
 
 class UserCommentsHandler (webapp2.RequestHandler):
 
     def put (self):
         logged_in_user, commenters_id = ADayThere.tool_user ()
        
-        print "Credentials", logged_in_user, commenters_id
-
         if not logged_in_user:
             self.response.status = 401
             return
@@ -29,7 +28,7 @@ class UserCommentsHandler (webapp2.RequestHandler):
             
 
         
-        prev_comment = UserComment.query_previous_comment (commenters_id.user_id, userid, title).get ()
+        prev_comment = UserComment.query_previous_comment (commenters_id.name, userid, title).get ()
 
         if prev_comment is not None:
             self.response.status = 409
@@ -44,7 +43,7 @@ class UserCommentsHandler (webapp2.RequestHandler):
 
 
         new_comment = UserComment ()
-        new_comment.commenters_id = commenters_id.name
+        new_comment.commenters_name = commenters_id.name
         new_comment.userid = userid
         new_comment.title = title
         new_comment.text = data.get ('text', None)
