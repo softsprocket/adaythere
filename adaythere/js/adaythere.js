@@ -1637,15 +1637,17 @@ adaythere.controller ("loginCtrl", ["$scope", "$http", "$modal", function ($scop
 adaythere.controller ("adminCtrl", ["$scope", "$http", function ($scope, $http) {
 	
 	$scope.received_profile_data = [];
-	$scope.search_on = {};
+	$scope.received_days_data = [];
+	$scope.profile_search_on = {};
+	$scope.days_search_on = {};
 
 
 	$scope.adminprofile_search = function () {
 		var queried = false;
 		var previous_param = false;
 		var search_str = "";
-		for (each in $scope.search_on) {
-			if ($scope.search_on.hasOwnProperty (each)) {
+		for (each in $scope.profile_search_on) {
+			if ($scope.profile_search_on.hasOwnProperty (each)) {
 				if (!queried) {
 					queried = true;
 					search_str += "?";
@@ -1659,7 +1661,7 @@ adaythere.controller ("adminCtrl", ["$scope", "$http", function ($scope, $http) 
 
 				search_str += each;
 				search_str += "=";
-				search_str += escape ($scope.search_on[each]);
+				search_str += escape ($scope.profile_search_on[each]);
 			}
 		}
 
@@ -1670,6 +1672,49 @@ adaythere.controller ("adminCtrl", ["$scope", "$http", function ($scope, $http) 
 			}
 		);
 	};
+
+	$scope.admindays_search = function () {
+		var queried = false;
+		var previous_param = false;
+		var search_str = "";
+		for (each in $scope.days_search_on) {
+			if ($scope.days_search_on.hasOwnProperty (each)) {
+				if (!queried) {
+					queried = true;
+					search_str += "?";
+				}
+
+				if (previous_param) {
+					search_str += "&";
+				} else {
+					previous_param = true;
+				}
+
+				search_str += each;
+				search_str += "=";
+				search_str += escape ($scope.days_search_on[each]);
+			}
+		}
+
+
+		$http.get ("/admin_days" + search_str)
+			.success (function (data, status, headers, config) {
+				$scope.received_days_data = data;
+			}
+		);
+	};
+
+	$scope.admindays_delete_day = function (day) {
+		
+		$http.post ("/admin_days", JSON.stringify (day))
+			.success (function (data, status) {
+				console.log ("delete day succeeded: " + status);	
+			})
+	       		.error (function (data, status) {
+				console.log ("delete day failed: " + status);
+			}
+		);	
+	}
 
 	$scope.save_changed_user = function (user, msg_div) {
 		$(msg_div).text ("");

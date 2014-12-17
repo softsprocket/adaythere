@@ -295,6 +295,7 @@ app = webapp2.WSGIApplication ([
     ('/logout', app.login.LogoutHandler),
     ('/profile', app.profile.ProfileHandler),
     ('/admin_profiles', app.admin.ProfilesHandler),
+    ('/admin_days', app.admin.DaysHandler),
     ('/admin', app.admin.AdminHandler),
     ('/keywords', app.keywords.KeywordHandler),
     ('/locality_days', app.locality_days.LocalityDaysHandler),

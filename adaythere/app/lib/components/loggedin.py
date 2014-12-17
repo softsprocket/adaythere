@@ -13,11 +13,12 @@ class LoggedInNavView:
         if ADayThere.admin_user (db_user):
             admin_menu = """
                 <li class="dropdown" ng-controller="adminCtrl">
-                    <a href class="dropdown-toggle">
+                    <a href="/admin" class="dropdown-toggle">
                         Admin
                     </a>
                     <ul class="dropdown-menu adt-nav-menu-button">
-                        <a href="/admin">profiles</a>
+                        <a href="/admin?type=profiles">profiles</a>
+                        <a href="/admin?type=days">days</a>
                     </ul>
                 </li>
             """
