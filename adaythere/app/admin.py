@@ -2,6 +2,7 @@ import re
 import webapp2
 from google.appengine.api import users as api_users
 from app.lib.db.user import User
+from app.lib.db.days import Day
 import cgi
 from google.appengine.ext import ndb
 import json
@@ -12,7 +13,7 @@ class AdminHandler (webapp2.RequestHandler):
     def get (self):
         tool_user, db_user = ADayThere.tool_user ()
 
-        if not tool_user or db_user is None or not ADayThere.admin_user (db_user):
+        if not ADayThere.admin_user (db_user):
             self.response.status = 401
             self.response.write ("Unauthorized")
             return
@@ -49,16 +50,38 @@ class AdminHandler (webapp2.RequestHandler):
         adaythere.open_element ("section", {"ng-controller":"adminCtrl", "style":"width:600px;margin:0px auto;"})
 
         adaythere.open_element ("div", {"id":"admin_profile_div"})
+
+        type = self.request.get ('type', default_value=None)
+
+        if type is not None:
+            if type == 'profiles':
+                self.get_profile_form (adaythere)
+            elif type == 'days':
+                self.get_days_form (adaythere)
+
+        adaythere.close_element ("div")
+
+        adaythere.close_element ("section")
+
+        adaythere.open_element ("footer", {"id":"page_footer"})
+        adaythere.open_element ("p", None, "&copy; 2014 SoftSprocket")
+        adaythere.close_element ("p")
+        adaythere.close_element ("footer")
+
+        self.response.status = 200
+        self.response.write (adaythere.get ())
+
+    def get_profile_form (self, adaythere):
         adaythere.append_to_element ("""
             <h3>Profiles</h3>
         """)
         adaythere.append_to_element ("""
         <label for="name">Name: </label>
-        <input id="name" class="form-control" type='text' ng-model='search_on.name'></input>
+        <input id="name" class="form-control" type='text' ng-model='profile_search_on.name'></input>
         <label for="email">Email: </label>
-        <input id="email" class="form-control" type='text' ng-model='search_on.email'></input>        
+        <input id="email" class="form-control" type='text' ng-model='profile_search_on.email'></input>        
         <label for="userid">UserId: </label>
-        <input id="userid" class="form-control" type='text' ng-model='search_on.userid'></input>
+        <input id="userid" class="form-control" type='text' ng-model='profile_search_on.userid'></input>
         """)
         adaythere.append_to_element ("""
         <button class="btn btn-primary" ng-click="adminprofile_search ()">Search</button>
@@ -87,18 +110,44 @@ class AdminHandler (webapp2.RequestHandler):
         </div>
         <div ng-if="received_profile_data.more">More</div>
         """)
-        adaythere.open_element ("div")
 
-        adaythere.close_element ("section")
+    def get_days_form (self, adaythere):
+        adaythere.append_to_element ("""
+            <h3>Days</h3>
+        """)
+        adaythere.append_to_element ("""
+        <label for="name">By user name: </label>
+        <input id="name" class="form-control" type='text' ng-model='days_search_on.name'></input>
+        <label for="title">By title: </label>
+        <input id="title" class="form-control" type='text' ng-model='days_search_on.title'></input>        
+        <label for="locale">By locale: </label>
+        <input id="locale" class="form-control" type='text' ng-model='days_search_on.locale'></input>
+        """)
+        adaythere.append_to_element ("""
+        <button class="btn btn-primary" ng-click="admindays_search ()">Search</button>
+        <div>----------------------------------------------------------------</div>
+        <div ng-repeat="day in received_days_data.days">
+            <ul>
+                <li>
+                    <label>User Id</label>
+                    <input class="form-control" type="text" ng-model="day.userid" readonly></input>
+                    <label>Name</label>
+                    <input class="form-control" type="text" ng-model="day.name" readonly></input>
+                    <label>Title</label>
+                    <input class="form-control" type="text" ng-model="day.title" readonly></input>
+                    <label>Description</label>
+                    <input class="form-control" type="text" ng-model="day.description" readonly></input>
+                    <label>Locale</label>
+                    <input class="form-control" type="text" ng-model="day.locale" readonly></input>
 
-        adaythere.open_element ("footer", {"id":"page_footer"})
-        adaythere.open_element ("p", None, "&copy; 2014 SoftSprocket")
-        adaythere.close_element ("p")
-        adaythere.close_element ("footer")
+                    <button ng-click="admindays_delete_day (day)">Delete</button>
 
-        self.response.status = 200
-        self.response.write (adaythere.get ())
-
+                </li>
+            </ul>
+            <div>----------------------------------------------------------------</div>
+        </div>
+        <div ng-if="received_profile_data.more">More</div>
+        """)
 
 class ProfilesHandler (webapp2.RequestHandler):
     max_limit = 10
@@ -123,8 +172,8 @@ class ProfilesHandler (webapp2.RequestHandler):
             if email != '':
                 query = query.filter (User.email == email)
 
-        if 'uid' in self.request.GET.keys ():    
-            uid = self.request.GET['userid']
+        if 'user_id' in self.request.GET.keys ():    
+            uid = self.request.GET['user_id']
             if uid != '':
                 query = query.filter (User.user_id == uid)
 
@@ -206,4 +255,98 @@ class ProfilesHandler (webapp2.RequestHandler):
 
         return res
 
+   
+
+class DaysHandler (webapp2.RequestHandler):
+    max_limit = 10
     
+    def get (self):
+        
+        tool_user, db_user = ADayThere.tool_user ()
+
+        if not ADayThere.admin_user (db_user):
+            self.response.status = 401
+            self.response.write ("Unauthorized")
+            return
+
+        query = Day.query ()
+        if 'name' in self.request.GET.keys ():
+            name = self.request.GET['name']
+            if name != '':
+                query = query.filter (Day.name == name) 
+
+        if 'title' in self.request.GET.keys ():
+            title = self.request.GET['title']
+            if title != '':
+                query = query.filter (Day.title == title)
+
+        if 'locale' in self.request.GET.keys ():    
+            locale = self.request.GET['locale']
+            if locale != '':
+                query = query.filter (Day.full_locality == locale)
+
+        limit = self.request.get ('limit', None)
+        if limit is None:
+            limit = DaysHandler.max_limit
+
+        cursor = ndb.Cursor (urlsafe=self.request.get ('cursor'))
+
+        days, cursor, more = query.fetch_page (int (limit), start_cursor=cursor)
+
+        days_arr = []
+
+        for each in days:
+            d = self.__build_day (each)
+            days_arr.append (d)
+
+        safe_cursor = ''
+        if cursor:
+            safe_cursor = cursor.urlsafe ()
+
+        resp_obj = {
+            "days": days_arr,
+            "cursor": safe_cursor,
+            "more": more
+        }
+
+        resp = json.dumps (resp_obj)
+        self.response.write (resp)
+
+
+    def __build_day (self, day):
+
+        res = {}
+        if day is not None:
+            res["userid"] = day.userid
+            res["name"] = day.name
+            res["locale"] = day.full_locality
+            res["title"] = day.title
+            res["description"] = day.description
+
+        return res
+
+
+    def post (self):
+        
+        tool_user, db_user = ADayThere.tool_user ()
+
+        if not ADayThere.admin_user (db_user):
+            self.response.status = 401 
+            self.response.write ("Unauthorized")
+            return
+
+        sent_day = json.loads (self.request.body)
+    
+        day_query = Day.query_user_title (sent_day['userid'], sent_day['title'])
+        day = day_query.get ()
+        if day is None:
+            self.response.status = 404
+            self.response.write ("Not Found")
+            return
+
+        day.key.delete ()
+
+        self.response.status = 200
+        self.response.write ("OK")
+
+
