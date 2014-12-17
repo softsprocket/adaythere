@@ -115,7 +115,7 @@ class BecomeAContributorModal (Modal):
                     </div>
                     <div id="contributor_name_choice" style="color:red;">{0}</div>
                     <label for="contribute_google_nickname">Name:</label> 
-                    <input id="contribute_google_nickname" class="form-control" type='text' contributor-user-name value="{1}"></input>
+                    <input data-warning-id="contributor_name_choice" id="contribute_google_nickname" class="form-control" type='text' contributor-user-name value="{1}"></input>
                     <input id="contribute_gotto_tools" type="checkbox">Go to create tools</input>
                 """.format (suggest_change, db_user.name)
 

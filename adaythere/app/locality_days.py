@@ -15,14 +15,12 @@ class LocalityDaysHandler (webapp2.RequestHandler):
             self.return_days (days, None, False)    
             return
 
-        print 'Here'
         userid = self.request.get ('user_id', None)
         if userid is not None:
             title = self.request.get ('title', None)
 
             if title is not None:
                 day = Day.query_user_title (userid, title).get ()
-                print 'day >>>>>>>>', day
                 days = []
                 days.append (day)
             else:

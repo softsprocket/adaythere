@@ -91,8 +91,6 @@ class DayHandler (webapp2.RequestHandler):
         days = []
         data = Day.query_user (db_user.user_id).fetch ()
 
-        print data
-
         for each in data:
             days.append (json.dumps (each.to_dict ()))
 

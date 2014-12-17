@@ -37,29 +37,26 @@ from app.lib.components.element import Elements
 from app.lib.components.day_views import DayDisplay, DayPhotoDisplay, DayInfoDisplay
 from app.lib.db.days import Day, DayPhoto
 from app.lib.components.day_search import DaySearch
+from app.lib.components.send_mail import SendAdvertizeMail
 
 class ToolsHandler (webapp2.RequestHandler):
-    def get (self):
-        """
-            Check and see if the user is logged in through
-            google. If so set up logged in view else
-            setup not logged in view.
-        """
-
+    def __init__(self, request, response):
+        self.initialize(request, response)
+        
         locale = self.request.GET.get ('locale', 'en_US')
         i18n.get_i18n ().set_locale (locale)
 
-        user = users.get_current_user ()
+        self.user = users.get_current_user ()
 
-        adaythere = ADayThere ()
-        adaythere.add_meta_tags ([
+        self.adaythere = ADayThere ()
+        self.adaythere.add_meta_tags ([
             { "charset":"UTF-8" },
             { "http-equiv":"X-UA-Compatible", "content":"IE=edge" },
             { "name":"description", "content":"A social media site that celebrates the joys of place." },
             { "name":"viewport", "content":"initial-scale=1"}
         ])
 
-        adaythere.add_links ([
+        self.adaythere.add_links ([
             { "rel":"stylesheet", "href":"css/bootstrap.css" },
             { "rel":"stylesheet", "href":"css/adaythere.css" }
         ])
@@ -67,7 +64,7 @@ class ToolsHandler (webapp2.RequestHandler):
 
         maps = Maps ()
 
-        adaythere.add_script_tags_for_body ([
+        self.adaythere.add_script_tags_for_body ([
             { "src":"js/jquery-1.11.0-beta2.js" },
             { "src":"js/angular/angular.min.js" },
             { "src":"js/angular/angular-route.min.js" },
@@ -77,24 +74,25 @@ class ToolsHandler (webapp2.RequestHandler):
             { "src":"https://apis.google.com/js/platform.js", "async":None, "defer":None }
         ])
 
+
+    def get (self):
+        """
+            Check and see if the user is logged in through
+            google. If so set up logged in view else
+            setup not logged in view.
+        """
+
+
         db_user = None
         navView = None
         logged_in = False
-        if user is None:
+        if self.user is None:
             navView = LoggedOutNavView ()
-            logging.info ("user not logged in")
         else:
-            logging.info ("user nickname: " + str (user.nickname ()));
-            logging.info ("user email: " + str (user.email ()));
-            logging.info ("user id: " + str (user.user_id ()));
-            logging.info ("user federated_identity: " + str (user.federated_identity ()));
-            logging.info ("user federated_provider: " + str (user.federated_provider ()));
-            logging.info ("user auth_domain: " + str (user.auth_domain ()));
-            
-            db_user = User.query_user_id (str (user.user_id ()))
+            db_user = User.query_user_id (str (self.user.user_id ()))
 
             if db_user is None:
-                db_user = User.record_from_google_user (user)
+                db_user = User.record_from_google_user (self.user)
 
             if db_user.banned:
                 navView = LoggedOutNavView ()
@@ -114,62 +112,61 @@ class ToolsHandler (webapp2.RequestHandler):
                 </li>
         """
 
-        adaythere.open_element ("header", {"id":"page_header"})
-        adaythere.open_element ("h1", {"id":"page_heading"}, "A Day There")
-        adaythere.close_element ("h1")
-        adaythere.open_element ("nav")
-        adaythere.append_to_element (navView.get ())
-        adaythere.close_element ("nav")
-        adaythere.open_element ("div")
-        adaythere.append_to_element (adminProfileModal.get ())
-        adaythere.close_element ("div")
-        adaythere.open_element ("div")
-        adaythere.append_to_element (contributorModal.get ())
-        adaythere.close_element ("div")
-        adaythere.append_to_element (sidebar_display)
-        adaythere.close_element ("header")
+        self.adaythere.open_element ("header", {"id":"page_header"})
+        self.adaythere.open_element ("h1", {"id":"page_heading"}, "A Day There")
+        self.adaythere.close_element ("h1")
+        self.adaythere.open_element ("nav")
+        self.adaythere.append_to_element (navView.get ())
+        self.adaythere.close_element ("nav")
+        self.adaythere.open_element ("div")
+        self.adaythere.append_to_element (adminProfileModal.get ())
+        self.adaythere.close_element ("div")
+        self.adaythere.open_element ("div")
+        self.adaythere.append_to_element (contributorModal.get ())
+        self.adaythere.close_element ("div")
+        self.adaythere.append_to_element (sidebar_display)
+        self.adaythere.close_element ("header")
 
-        adaythere.open_element ("div", { "ng-controller":"daysSearchCtrl"})
+        self.adaythere.open_element ("div", { "ng-controller":"daysSearchCtrl"})
         
-        adaythere.open_element ("section", { "id":"welcome_to_left" })
-        adaythere.append_to_element ("""
+        self.adaythere.open_element ("section", { "id":"welcome_to_left" })
+        self.adaythere.append_to_element ("""
                     <img src="img/logo.png" width="60%"></img>
                     <p><h1 style="font-style:italic;text-align:center;font-size:large;">Celebrating the joys of place.</h3></p>
                 """)
-        adaythere.close_element ("section")
+        self.adaythere.close_element ("section")
         
-        adaythere.open_element ("section", { "id":"welcome_to_right" })
-        adaythere.append_to_element ("""<div id="google_like_main" style="float:right;"> <div class="g-plusone" data-size="medium" data-annotation="inline" data-width="250"></div></div>""")
-        adaythere.close_element ("section")
+        self.adaythere.open_element ("section", { "id":"welcome_to_right" })
+        self.adaythere.append_to_element ("""<div id="google_like_main" style="float:right;"> <div class="g-plusone" data-size="medium" data-annotation="inline" data-width="250"></div></div>""")
+        self.adaythere.close_element ("section")
 
-        adaythere.open_element ("section", { "id": "daysearch_overlay" })
+        self.adaythere.open_element ("section", { "id": "daysearch_overlay" })
         day_search = DaySearch ()
         search_form = day_search.get ()
-        adaythere.append_to_element (search_form)
-        adaythere.close_element ("section")
+        self.adaythere.append_to_element (search_form)
+        self.adaythere.close_element ("section")
 
 
-        adaythere.open_element ("section", { "id":"find_a_day" })
+        self.adaythere.open_element ("section", { "id":"find_a_day" })
 
-        adaythere.append_to_element ("""
+        self.adaythere.append_to_element ("""
                     <img src="img/logo.png" width="30%"></img>
                     <p><h1 style="font-style:italic;text-align:center;font-size:large;">Celebrating the joys of place.</h3></p>
                 """)
 
-        adaythere.append_to_element (day_search.get_days_display ())
-        adaythere.close_element ("section")
+        self.adaythere.append_to_element (day_search.get_days_display ())
+        self.adaythere.close_element ("section")
     
-        adaythere.close_element ("div")
+        self.adaythere.close_element ("div")
 
-        adaythere.append_to_element (MapTools.map_elements ().get ())
+        self.adaythere.append_to_element (MapTools.map_elements ().get ())
 
-        adaythere.open_element ("footer", {"id":"page_footer"})
-        adaythere.open_element ("p", None, "&copy; 2014 SoftSprocket")
-        adaythere.close_element ("p")
-        adaythere.close_element ("footer")
+        self.adaythere.open_element ("footer", {"id":"page_footer"})
+        self.adaythere.open_element ("p", None, "&copy; 2014 SoftSprocket")
+        self.adaythere.close_element ("p")
+        self.adaythere.close_element ("footer")
 
-
-        self.response.write (adaythere.get ())
+        self.response.write (self.adaythere.get ())
 
 
 class MapTools ():
@@ -230,6 +227,63 @@ class MapTools ():
             .close_element ("section")
         return element
 
+class AdvertizeHandler (ToolsHandler):
+    def __init__(self, request, response):
+        ToolsHandler.__init__(self, request, response)
+    
+    def get (self):
+
+        self.adaythere.open_element ("header", {"id":"page_header"})
+        self.adaythere.open_element ("h1", {"id":"page_heading"}, "A Day There")
+        self.adaythere.close_element ("h1")
+        self.adaythere.open_element ("nav")
+        self.adaythere.close_element ("nav")
+        self.adaythere.open_element ("div")
+        self.adaythere.close_element ("div")
+        self.adaythere.open_element ("div")
+        self.adaythere.close_element ("div")
+        self.adaythere.close_element ("header")
+
+        self.adaythere.open_element ("div", { "ng-controller":"sendMailCtrl"})
+        
+        self.adaythere.open_element ("section", { "id":"welcome_to_left" })
+        self.adaythere.append_to_element ("""
+                    <img src="img/logo.png" width="60%"></img>
+                    <p><h1 style="font-style:italic;text-align:center;font-size:large;">Celebrating the joys of place.</h3></p>
+                """)
+        self.adaythere.close_element ("section")
+        
+        self.adaythere.open_element ("section", { "id":"welcome_to_right" })
+        self.adaythere.append_to_element ("""<div id="google_like_main" style="float:right;"> <div class="g-plusone" data-size="medium" data-annotation="inline" data-width="250"></div></div>""")
+        self.adaythere.close_element ("section")
+
+        self.adaythere.open_element ("section", { "id": "advertize_overlay" })
+        sm = SendAdvertizeMail ()
+        send_form = sm.get ()
+        self.adaythere.append_to_element (send_form)
+        self.adaythere.close_element ("section")
+
+
+        self.adaythere.open_element ("section", { "id":"send_email" })
+
+        self.adaythere.append_to_element ("""
+                    <img src="img/logo.png" width="30%"></img>
+                    <p><h1 style="font-style:italic;text-align:center;font-size:large;">Celebrating the joys of place.</h3></p>
+                """)
+
+        #self.adaythere.append_to_element (day_search.get_days_display ())
+        self.adaythere.close_element ("section")
+    
+        self.adaythere.close_element ("div")
+
+        #self.adaythere.append_to_element (MapTools.map_elements ().get ())
+
+        self.adaythere.open_element ("footer", {"id":"page_footer"})
+        self.adaythere.open_element ("p", None, "&copy; 2014 SoftSprocket")
+        self.adaythere.close_element ("p")
+        self.adaythere.close_element ("footer")
+
+        self.response.write (self.adaythere.get ())
 
 
 app = webapp2.WSGIApplication ([
@@ -241,9 +295,11 @@ app = webapp2.WSGIApplication ([
     ('/logout', app.login.LogoutHandler),
     ('/profile', app.profile.ProfileHandler),
     ('/admin_profiles', app.admin.ProfilesHandler),
+    ('/admin', app.admin.AdminHandler),
     ('/keywords', app.keywords.KeywordHandler),
     ('/locality_days', app.locality_days.LocalityDaysHandler),
     ('/user_comments', app.user_comments.UserCommentsHandler),
-    ('/users', app.user.UsersHandler)
+    ('/users', app.user.UsersHandler),
+    ('/advertize', AdvertizeHandler)
 ], debug=True)
 
