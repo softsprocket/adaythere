@@ -3,6 +3,15 @@ from webapp2_extras import i18n
 import re
 from app.adaythere import ADayThere
 
+def get_help_menu ():
+    return """
+            <li class="dropdown" ng-controller="loginCtrl" style="list-style:none">
+                <a href ng-click="open_help ()">
+                    Help
+                </a>
+            </li>
+    """
+
 class LoggedInNavView:
 
     def __init__(self, db_user):
@@ -26,12 +35,9 @@ class LoggedInNavView:
 
         self.html = """
             <li class="dropdown" ng-controller="loginCtrl">
-                <a href class="dropdown-toggle">
+                <a href ng-click="googlelogout()" class="dropdown-toggle">
                     Logout
                 </a>
-                <ul class="dropdown-menu adt-nav-menu-button">
-                    <a ng-click="googlelogout()">Google Logout</a>
-                </ul>
             </li>
             <li class="dropdown" ng-controller="profileCtrl">
                 <a href class="dropdown-toggle" id="profile_ctrl_menu_toggle">
@@ -47,9 +53,11 @@ class LoggedInNavView:
 
         self.html += """
                 </ul>
+                {0}
             </li>
-            {0}
-        """.format(admin_menu)
+            <a href popover-placement="bottom" popover-trigger="mouseenter" popover="Click links to see drop down menus">?</a>
+            {1}
+        """.format(get_help_menu (), admin_menu)
 
     
     @classmethod
@@ -63,7 +71,7 @@ class LoggedInNavView:
     @classmethod
     def non_tool_user_menus (cls):
         return  """
-            <a ng-click="become_a_contributor()">Become A Contributor</a>
+            <a ng-click="become_a_contributor()">Go to Tools</a>
             <a ng-click="gotoSearchPage()">Go to Search</a>
         """
 

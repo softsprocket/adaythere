@@ -1,6 +1,6 @@
 
 from webapp2_extras import i18n
-
+from app.lib.components.loggedin import get_help_menu
 
 class LoggedOutNavView:
 
@@ -9,15 +9,13 @@ class LoggedOutNavView:
         self.html = """
         <ul class="page-header-nav">
             <li class="dropdown" ng-controller="loginCtrl" style="list-style:none">
-                <a href class="dropdown-toggle">
+                <a href id="user_not_logged_in" ng-click="googlelogin()"  class="dropdown-toggle">
                     Login
                 </a>
-                <ul class="dropdown-menu adt-nav-menu-button">
-                        <a ng-click="googlelogin()">Google Login</a>
-                </ul>
             </li>
+            {0}
         </ul>
-        """
+        """.format (get_help_menu ())
 
 
     def get(self):

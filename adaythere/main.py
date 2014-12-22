@@ -16,6 +16,7 @@ from app.lib.components.sidebar import PlacesSearchView
 from app.lib.components.sidebar import MarkersView
 from app.lib.components.sidebar import CreateADayView
 from app.lib.components.sidebar import MyDaysView
+from app.lib.components.sidebar import ToolHelpView
 import app.days
 import app.login
 import app.profile
@@ -32,7 +33,7 @@ import logging
 import json
 import inspect
 from app.lib.db.user import User
-from app.lib.components.genmodal import Modal, ProfileModal, MarkerModal, AdminProfileModal, AddPhotosModal, BecomeAContributorModal
+from app.lib.components.genmodal import Modal, ProfileModal, MarkerModal, AdminProfileModal, AddPhotosModal, BecomeAContributorModal, HelpModal
 from app.lib.components.element import Elements
 from app.lib.components.day_views import DayDisplay, DayPhotoDisplay, DayInfoDisplay
 from app.lib.db.days import Day, DayPhoto
@@ -103,7 +104,7 @@ class ToolsHandler (webapp2.RequestHandler):
             
         adminProfileModal = AdminProfileModal ()
         contributorModal = BecomeAContributorModal ()
-
+        
         sidebar_display = """
                 <li id="sidebar_display_menu_item" ng-controller="sidebarDisplayCtrl" style="list-style:none; position:absolute; right:10px; top:5px">
                     <a href ng-show="sidebar_link.map_is_displayed" ng-click="toggle_sidebar ()">
@@ -161,6 +162,25 @@ class ToolsHandler (webapp2.RequestHandler):
 
         self.adaythere.append_to_element (MapTools.map_elements ().get ())
 
+        self.adaythere.open_element ("div", { "id":"hello_login_popup" })
+        self.adaythere.append_to_element ("""
+            <h3>Click the link above to login</h3>
+            <p>The white bar is a menu bar and the links drop down menus. Login for more functionality"</p>
+        """)
+        self.adaythere.close_element ("div")
+        self.adaythere.open_element ("div", { "id":"hello_search_popup" })
+        self.adaythere.append_to_element ("""
+            <h3>The search tools</h3>
+            <p>The search tools let you find days that have been created. Login to create your own days.</p>
+        """)
+        self.adaythere.close_element ("div")
+        self.adaythere.open_element ("div", { "id":"hello_help_popup" })
+        self.adaythere.append_to_element ("""
+            <h3>Help</h3>
+            <p>Use the help link in the menu. You'll also find these: <a href popover="Welcome to A Day There" popover-trigger="mouseenter"><strong>?</strong></a> 
+            in places and if you place your mouse cursor over them some information will popup."</p>
+        """)
+        self.adaythere.close_element ("div")
         self.adaythere.open_element ("footer", {"id":"page_footer"})
         self.adaythere.open_element ("p", None, "&copy; 2014 SoftSprocket")
         self.adaythere.close_element ("p")
@@ -184,10 +204,12 @@ class MapTools ():
         markersView = MarkersView (logged_in)
         createADayView = CreateADayView (logged_in)
         myDaysView = MyDaysView (logged_in)
+        toolHelpView = ToolHelpView (logged_in)
 
         profileModal = ProfileModal ()
         markerModal = MarkerModal ()
         addPhotosModal = AddPhotosModal ()
+        helpModal = HelpModal ()
 
         element.open_element ("section", {"id":"sidebar_section", "ng-controller":"sidebarCtrl"})\
             .open_element ("header", {"id":"sidebar_heading"})\
@@ -214,6 +236,9 @@ class MapTools ():
             .open_element ("tab", {"active":"find_a_day.active", "heading":"My Days"})\
             .append_to_element (myDaysView.get ())\
             .close_element ("tab")\
+            .open_element ("tab", {"heading":"Help"})\
+            .append_to_element (toolHelpView.get ())\
+            .close_element ("tab")\
             .close_element ("tabset")\
             .open_element ("div", {"ng-controller":"profileCtrl"})\
             .append_to_element (profileModal.get ())\
@@ -223,6 +248,9 @@ class MapTools ():
             .close_element ("div")\
             .open_element ("div")\
             .append_to_element (addPhotosModal.get ())\
+            .close_element ("div")\
+            .open_element ("div")\
+            .append_to_element (helpModal.get ())\
             .close_element ("div")\
             .close_element ("section")
         return element

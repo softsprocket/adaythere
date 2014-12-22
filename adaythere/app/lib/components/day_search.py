@@ -24,6 +24,7 @@ class DaySearch (Elements):
         self.append_to_element ("""
             <p><label class="daysearch_label" for="daysearch_rating">Minimum rating:</label>
             <rating id="daysearch_rating" value="daysearch.rating" max="daysearch.max"></rating>
+            <button ng-click="daysearch.rating=0">Clear</button>
         """)
 
         self.append_to_element ("""
