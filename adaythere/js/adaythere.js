@@ -1381,7 +1381,22 @@ adaythere.controller ("daysSearchCtrl", ["$scope", "$modal", "localityDaysServic
 		$scope.daysearch_returned.reviews = [];
 	}
 
+	var hello_world = function () {
+		if ($("#user_not_logged_in").length == 0) {
+			return;
+		}
+	
+		$("#hello_login_popup").show (2000, function () {
+			$("#hello_search_popup").show (2000, function () {
+				$("#hello_help_popup").show (2000);	
+			});	
+		});	
+	}
+
+
 	init_return ();
+
+	hello_world ();
 
 	$scope.open_welcome_doors = function () {
 		$("#welcome_to_left").hide ("slow");
@@ -1631,8 +1646,23 @@ adaythere.controller ("loginCtrl", ["$scope", "$http", "$modal", function ($scop
 		);
 	};
 
+	$scope.open_help = function () {
+		var modalInstance = $modal.open ({
+			templateUrl: 'helpModalContent.html',
+		    	controller: adaythere.HelpModalInstanceCtrl,
+		    	scope: $scope,
+		});
+	};
 
 }]);
+
+adaythere.HelpModalInstanceCtrl = function ($scope, $modalInstance) {
+
+	$scope.close = function () {
+		$modalInstance.close ();
+	};
+
+};
 
 adaythere.controller ("adminCtrl", ["$scope", "$http", function ($scope, $http) {
 	
@@ -2931,6 +2961,7 @@ var size_daysearch = function (w, h, small) {
 		"width": overlay_width,
 		"left": (w - overlay_width) / 2
 	});
+
 
 	var width = $(".fieldset_daysearch").width ();
 

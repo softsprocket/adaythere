@@ -6,7 +6,9 @@ class SidebarHeaderView:
     def __init__ (self):
 
         self.html = """
-            <h3>Tools</h3>
+            <h3>Tools
+            <a href="#" popover-placement="left" popover-trigger="mouseenter" popover="The sidebar tools are used to create and edit days. Click each heading to open the tool">?</a>
+            </h3>
             <h3>Current Locality: {{ location.locality }}</h3>
         """
 
@@ -22,7 +24,11 @@ class PlacesSearchView:
         if logged_in:
             self.html = """
                 <div>
-                    <h3>Places Search</h3>
+                    <h3>Places Search
+                        <a href="#" popover-trigger="mouseenter" popover="Clicking the go button will reveal a list of local places. 
+                        Click the place link to add a marker. Zooming in and click go for different selections.
+                        Drag the map toset a different search area or use the Location tool.">?</a>
+                    </h3>
                     <h4>Click map to set search location</h4>
                     <input type="checkbox" ng-click="show_search_area ()">Show search area</input>
                     <h5>{{ clicked.locality }}</h5>
@@ -61,6 +67,10 @@ class MapSearchView:
                 <input id="autocomplete_google_input" type="text"></input>
                 <button id="centre_map_at_button" type="button" ng-click="centre_map_at ()">Go</button>
                 <button type="button" ng-click="set_marker_at_place (location)">Add Marker</button>
+                <a href="#" popover-placement="bottom" popover-trigger="mouseenter" popover="Begin typing in the input box and autocomplete will begin showing possible completions.
+                    Click when a selection matches. Clicking the Go button will center the map at that location. Clicking the Add Marker button will set a 
+                    marker there. You can click the marker to bring up a dialog that allows you to add it to your day. Clicking the Marker tool heading will reveal tools to clear current markers
+                    Clicking Set As Default will make the current location your default starting point.">?</a>
                 <h3>{{ location.vicinity }}</h3>
                 <h4>{{ location.latitude }} Lat. {{ location.longitude }} Lon.</h4>
                 <button type="button" ng-click="make_default_location ()">Set As Default</button>
@@ -81,8 +91,9 @@ class MarkersView:
 
         if logged_in:
             self.html = """
-            <div id="makers_util">
+            <div id="markers_util">
                 <button type="button" ng-click="adt_markers.clear_all_markers ()">Clear All Markers</button>
+                <a href="#" popover-placement="bottom" popover-trigger="mouseenter" popover="This will remove all markers not assigned to a day">?</a>
                 <li ng-repeat="marker in adt_markers.markers">
                     <a ng-click="adt_marker_modal.open_marker_modal (marker)">{{marker.name}}</a>
                     <button type="button" ng-click="adt_remove_marker (marker)">Remove</button>
@@ -227,6 +238,48 @@ class MyDaysView:
         else:
             self.html = """
 
+            """
+
+    def get (self):
+        return self.html
+
+
+class ToolHelpView:
+
+    def __init__ (self, logged_in):
+
+        if logged_in:
+            self.html = """
+            <div id="toolhelp_util">
+                <h2>Creating Your Own Day</h3>
+                <h3 style="text-decoration:underline;">Map Tools - Markers</h3>
+                <p>The "Map Tools" tab has three sections to help you find places,mark them and add them to your day.</p>
+                <p>Expand the "Location" section by clicking on the word Location. Here you can search for a place and
+                    center the map there an/or add a marker. You can also drag the map to change its center.</p>
+                <p>The "Set As Default" will set the center point as your default and take you there when you first open A Day There</p>
+                <p>The "Places" section of the "Map Tools" tab has tools that help you find establishments and landmarks in the search area
+                    that you might like to add to your day. You can choose a type, from the drop down list, to search for or hit go and 
+                    see a cross section. Zoom in on the map for a finer grained selection. As the map resolution increases different 
+                    establishments are revealed when the "Go" button is clicked.
+                <p>The "Markers" section of the "Map Tools" tab allows you to clear markers from the map.
+                <p>Once a marker has been added to the map you can click on it and then edit or add to the information on the marker. Once you 
+                    are finished you can click the button to add it to your day (or cancel if you change your mind.)</p>
+                <h3 style="text-decoration:underline;">Create Day</h3>
+                <p>The "Create Day" tab has tools to let you assign a title to the day, write a description of the day, add photos to it and
+                    edit the places where you've placed markers. You can return to the "MapTools" and add more markers as you like.
+                <p>The "Clear" button will clear the day if you wish to start over. Nothing is saved until you click the "Save" button. Clicking the "Save" button 
+                    will take you to the "My Days" tab.</p>
+                <p>The "Add photos" button will open a dialog that allows you to select photos and upload them then add them to the current day.</p>
+                <h3 style="text-decoration:underline;">My Day</h3>
+                <p>"My Days" displays your saved days. On this tab you find a button to "Delete" your day. A popup will ask you to confirm. You can make a copy to 
+                    use as a template for a new day, edit the day (both of these selections will take you to the "Create Day" tab). You can display a saved day on the 
+                    map and use the drop down selector to choose how the route will be displayed.</p>
+
+            </div>
+            """
+        else:
+            self.html = """
+                <h3>Please log in for access to map tools</h3>
             """
 
     def get (self):

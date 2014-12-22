@@ -214,3 +214,47 @@ class AddPhotosModal (Modal):
 
         self.add_footer_content (modalFooter)
 
+class HelpModal (Modal):
+
+    def __init__ (self):
+
+        super (HelpModal, self).__init__("helpModalContent.html")
+        modalHeader = Elements ()
+        modalHeader.append_to_element ("""
+            <h3>Help</h3>
+        """)
+        self.add_header_content (modalHeader)
+
+        modalBody =Elements ()
+        modalBody.append_to_element ("""
+            <ol class="help_list">
+                <li class="help"><a href="#searching">Searching</a></li>
+                    <ol class="help_list_inner">
+                        <li class="help"><a href="#search_locality">Locality Field</a></li>
+                        <li class="help"><a href="#search_terms">Search Terms</a></li>
+                    </ol>
+            </ol>
+            <h3><a id="searching">Searching</a></h3>
+            <p>The "Day Search" form is available whether you log in or not. The simplest search is to click the "Random Days"
+                button. This will display a list of random results. Click on a title to see the day. You can return to the search
+                by clicking the "Search Again" button or using the menu item, accessed by clicking your user name in the menu bar.
+            </p>
+            <h4><a id="search_locality">Locality</a></h4>
+            <p>Enter the region you wish to search in the "Locality" field. It has autocomplete ability and will attempt to help 
+                you find the region you're looking for.
+            </p>
+            <h4><a id="search_terms">Search Terms</a></h4>
+            <p>The "Search Terms" field allows you to narrow your search based on words potentially found in the description or title
+                of a day.
+            </p>
+        """)
+
+        self.add_body_content (modalBody)
+               
+        modalFooter = Elements ()
+        modalFooter.append_to_element ("""
+            <button class="btn btn-warning" ng-click="close ()">Close</button>
+        """)
+
+        self.add_footer_content (modalFooter)
+
