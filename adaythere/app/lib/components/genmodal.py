@@ -225,7 +225,7 @@ class HelpModal (Modal):
         """)
         self.add_header_content (modalHeader)
 
-        modalBody =Elements ()
+        modalBody = Elements ()
         modalBody.append_to_element ("""
             <ol class="help_list">
                 <li class="help"><a href="#searching">Searching</a></li>
@@ -234,24 +234,25 @@ class HelpModal (Modal):
                         <li class="help"><a href="#search_terms">Search Terms</a></li>
                     </ol>
             </ol>
-            <h3><a id="searching">Searching</a></h3>
+            <h2><a id="searching">Searching</a></h3>
             <p>The "Day Search" form is available whether you log in or not. The simplest search is to click the "Random Days"
                 button. This will display a list of random results. Click on a title to see the day. You can return to the search
                 by clicking the "Search Again" button or using the menu item, accessed by clicking your user name in the menu bar.
             </p>
-            <h4><a id="search_locality">Locality</a></h4>
+            <h3><a id="search_locality">Locality</a></h4>
             <p>Enter the region you wish to search in the "Locality" field. It has autocomplete ability and will attempt to help 
-                you find the region you're looking for.
+                you find the region you're looking for. Locality is a requirement unless you are using the "Random Days" (which ignores all fields).
             </p>
-            <h4><a id="search_terms">Search Terms</a></h4>
+            <h3><a id="search_terms">Search Terms</a></h4>
             <p>The "Search Terms" field allows you to narrow your search based on words potentially found in the description or title
-                of a day.
+                of a day. 
             </p>
         """)
 
         self.add_body_content (modalBody)
-               
+
         modalFooter = Elements ()
+               
         modalFooter.append_to_element ("""
             <button class="btn btn-warning" ng-click="close ()">Close</button>
         """)

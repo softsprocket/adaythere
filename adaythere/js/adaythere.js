@@ -1416,6 +1416,9 @@ adaythere.controller ("daysSearchCtrl", ["$scope", "$modal", "localityDaysServic
 
 
 	$scope.getRandomDays = function () {
+		$("#hello_login_popup").hide ();
+		$("#hello_search_popup").hide ();
+		$("#hello_help_popup").hide ();
 		$scope.getLocalityDays ({random:true});
 		$scope.open_welcome_doors ();
 	};
@@ -1450,9 +1453,20 @@ adaythere.controller ("daysSearchCtrl", ["$scope", "$modal", "localityDaysServic
 	}
 
 	$scope.executeSearch = function () {
+		$("#hello_login_popup").hide ();
+		$("#hello_search_popup").hide ();
+		$("#hello_help_popup").hide ();
+
 		$scope.daysearch.full_locality = searchService.full_locality;
 
 		if ($scope.daysearch.full_locality == "") {
+			var timer;
+			$("#locality_autocomplete_input").click (function () {
+				$("#locality_autocomplete_input").css ("border", "").val ("");
+			});
+
+			$("#locality_autocomplete_input").css ("border", "1px solid red").val ("required field")
+
 			return;
 		}
 		
