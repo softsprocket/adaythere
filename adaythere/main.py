@@ -33,12 +33,11 @@ import logging
 import json
 import inspect
 from app.lib.db.user import User
-from app.lib.components.genmodal import Modal, ProfileModal, MarkerModal, AdminProfileModal, AddPhotosModal, BecomeAContributorModal, HelpModal
+from app.lib.components.genmodal import Modal, ProfileModal, MarkerModal, AdminProfileModal, AddPhotosModal, BecomeAContributorModal, HelpModal, MailModal
 from app.lib.components.element import Elements
 from app.lib.components.day_views import DayDisplay, DayPhotoDisplay, DayInfoDisplay
 from app.lib.db.days import Day, DayPhoto
 from app.lib.components.day_search import DaySearch
-from app.lib.components.send_mail import SendAdvertizeMail
 
 class ToolsHandler (webapp2.RequestHandler):
     def __init__(self, request, response):
@@ -160,7 +159,7 @@ class ToolsHandler (webapp2.RequestHandler):
     
         self.adaythere.close_element ("div")
 
-        self.adaythere.append_to_element (MapTools.map_elements ().get ())
+        self.adaythere.append_to_element (MapTools.map_elements (logged_in).get ())
 
         self.adaythere.open_element ("div", { "id":"hello_login_popup" })
         self.adaythere.append_to_element ("""
@@ -192,8 +191,7 @@ class ToolsHandler (webapp2.RequestHandler):
 class MapTools ():
 
     @classmethod
-    def map_elements (cls):
-        logged_in = True
+    def map_elements (cls, logged_in):
         element = Elements ()
         element.open_element ("section", {"id":"map_section"})\
             .close_element ("section")
@@ -210,6 +208,7 @@ class MapTools ():
         markerModal = MarkerModal ()
         addPhotosModal = AddPhotosModal ()
         helpModal = HelpModal ()
+        mailModal = MailModal (logged_in)
 
         element.open_element ("section", {"id":"sidebar_section", "ng-controller":"sidebarCtrl"})\
             .open_element ("header", {"id":"sidebar_heading"})\
@@ -252,66 +251,11 @@ class MapTools ():
             .open_element ("div")\
             .append_to_element (helpModal.get ())\
             .close_element ("div")\
+            .open_element ("div")\
+            .append_to_element (mailModal.get ())\
+            .close_element ("div")\
             .close_element ("section")
         return element
-
-class AdvertizeHandler (ToolsHandler):
-    def __init__(self, request, response):
-        ToolsHandler.__init__(self, request, response)
-    
-    def get (self):
-
-        self.adaythere.open_element ("header", {"id":"page_header"})
-        self.adaythere.open_element ("h1", {"id":"page_heading"}, "A Day There")
-        self.adaythere.close_element ("h1")
-        self.adaythere.open_element ("nav")
-        self.adaythere.close_element ("nav")
-        self.adaythere.open_element ("div")
-        self.adaythere.close_element ("div")
-        self.adaythere.open_element ("div")
-        self.adaythere.close_element ("div")
-        self.adaythere.close_element ("header")
-
-        self.adaythere.open_element ("div", { "ng-controller":"sendMailCtrl"})
-        
-        self.adaythere.open_element ("section", { "id":"welcome_to_left" })
-        self.adaythere.append_to_element ("""
-                    <img src="img/logo.png" width="60%"></img>
-                    <p><h1 style="font-style:italic;text-align:center;font-size:large;">Celebrating the joys of place.</h3></p>
-                """)
-        self.adaythere.close_element ("section")
-        
-        self.adaythere.open_element ("section", { "id":"welcome_to_right" })
-        self.adaythere.append_to_element ("""<div id="google_like_main" style="float:right;"> <div class="g-plusone" data-size="medium" data-annotation="inline" data-width="250"></div></div>""")
-        self.adaythere.close_element ("section")
-
-        self.adaythere.open_element ("section", { "id": "advertize_overlay" })
-        sm = SendAdvertizeMail ()
-        send_form = sm.get ()
-        self.adaythere.append_to_element (send_form)
-        self.adaythere.close_element ("section")
-
-
-        self.adaythere.open_element ("section", { "id":"send_email" })
-
-        self.adaythere.append_to_element ("""
-                    <img src="img/logo.png" width="30%"></img>
-                    <p><h1 style="font-style:italic;text-align:center;font-size:large;">Celebrating the joys of place.</h3></p>
-                """)
-
-        #self.adaythere.append_to_element (day_search.get_days_display ())
-        self.adaythere.close_element ("section")
-    
-        self.adaythere.close_element ("div")
-
-        #self.adaythere.append_to_element (MapTools.map_elements ().get ())
-
-        self.adaythere.open_element ("footer", {"id":"page_footer"})
-        self.adaythere.open_element ("p", None, "&copy; 2014 SoftSprocket")
-        self.adaythere.close_element ("p")
-        self.adaythere.close_element ("footer")
-
-        self.response.write (self.adaythere.get ())
 
 
 app = webapp2.WSGIApplication ([
@@ -328,7 +272,6 @@ app = webapp2.WSGIApplication ([
     ('/keywords', app.keywords.KeywordHandler),
     ('/locality_days', app.locality_days.LocalityDaysHandler),
     ('/user_comments', app.user_comments.UserCommentsHandler),
-    ('/users', app.user.UsersHandler),
-    ('/advertize', AdvertizeHandler)
+    ('/users', app.user.UsersHandler)
 ], debug=True)
 

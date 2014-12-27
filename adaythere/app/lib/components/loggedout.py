@@ -6,6 +6,14 @@ class LoggedOutNavView:
 
     def __init__(self):
 
+        contact_menu = """
+                <li class="dropdown" ng-controller="loginCtrl">
+                    <a href ng-click="open_loggedout_contact()" class="dropdown-toggle">
+                        Contact Us
+                    </a>
+                </li>
+        """
+
         self.html = """
         <ul class="page-header-nav">
             <li class="dropdown" ng-controller="loginCtrl" style="list-style:none">
@@ -14,8 +22,9 @@ class LoggedOutNavView:
                 </a>
             </li>
             {0}
+            {1}
         </ul>
-        """.format (get_help_menu ())
+        """.format (get_help_menu (), contact_menu)
 
 
     def get(self):

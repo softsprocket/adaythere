@@ -259,3 +259,52 @@ class HelpModal (Modal):
 
         self.add_footer_content (modalFooter)
 
+class MailModal (Modal):
+
+    def __init__ (self, loggedin):
+
+        super (MailModal,self).__init__("mailModalContent.html")
+        modalHeader = Elements ()
+        modalHeader.append_to_element ("""
+            <h3>Contact Us</h3>
+        """)
+        self.add_header_content (modalHeader)
+
+        if loggedin is not True:
+            addr_field = """
+		    <label>
+                        <span>Email Address: </span><input class="mail_form" id="mail_form_email" type="text" name="email" />
+		    </label><br/>
+            """
+        else:
+            addr_field = ""
+
+        
+        modalBody = Elements ()
+        modalBody.append_to_element ("""
+            <form class="mail_form">
+		    <label>
+                        <span>Name: </span><input class="mail_form" id="mail_form_name" type="text" name="name" />
+		    </label><br/>
+                    {0}
+		    <label>
+                        <span>Subject: </span><input class="mail_form" id="mail_form_subject" type="text" name="subject" />
+		    </label><br/>
+
+		    <label>
+                        <span>Message: </span><textarea class="mail_form" id="mail_form_feedback" name="feedback"></textarea>
+		    </label>
+        </form>
+        """.format (addr_field));
+
+        self.add_body_content (modalBody)
+
+        modalFooter = Elements ()
+               
+        modalFooter.append_to_element ("""
+            <button class="btn btn-primary" ng-click="send ()">Send</button>
+            <button class="btn btn-warning" ng-click="cancel ()">Cancel</button>
+        """)
+
+        self.add_footer_content (modalFooter)
+
