@@ -5,7 +5,7 @@ from app.adaythere import ADayThere
 
 def get_help_menu ():
     return """
-            <li class="dropdown" ng-controller="loginCtrl" style="list-style:none">
+            <li class="dropdown" ng-controller="loginCtrl">
                 <a href ng-click="open_help ()">
                     Help
                 </a>
@@ -32,6 +32,13 @@ class LoggedInNavView:
                 </li>
             """
         
+        contact_menu = """
+            <li class="dropdown" ng-controller="loginCtrl">
+                <a href ng-click="open_loggedin_contact()" class="dropdown-toggle">
+                    Contact Us
+                </a>
+            </li>
+        """
 
         self.html = """
             <li class="dropdown" ng-controller="loginCtrl">
@@ -53,11 +60,12 @@ class LoggedInNavView:
 
         self.html += """
                 </ul>
-                {0}
             </li>
+                {0}
+                {1}
+                {2}
             <a href popover-placement="bottom" popover-trigger="mouseenter" popover="Click links to see drop down menus">?</a>
-            {1}
-        """.format(get_help_menu (), admin_menu)
+        """.format(get_help_menu (), contact_menu, admin_menu)
 
     
     @classmethod

@@ -327,6 +327,8 @@ ADT_CreatedDay.copy = function (created_day) {
 	return day;
 }
 
+var execute_mail_function;
+
 ADT_CreatedDay.prototype.show_markers = function (scope, map) {
 	var markerBounds = new google.maps.LatLngBounds ();
 
@@ -343,7 +345,7 @@ ADT_CreatedDay.prototype.show_markers = function (scope, map) {
 		});
 
 		var infowindow = new google.maps.InfoWindow ({
-			content: "<a href='/advertize' target='_blank'>You could advertize here - click for more information</a>"
+			content: "<a href='javascript:execute_mail_function ()'>You could advertize here - click for more information</a>"
 		});
 
 		google.maps.event.addListener (place.marker, 'mouseover', function () {
@@ -1501,7 +1503,6 @@ adaythere.controller ("daysSearchCtrl", ["$scope", "$modal", "localityDaysServic
 		$scope.getLocalityDays (args);
 	};
 
-
 	$scope.user_comments = [];
 
 	function UserComment () {
@@ -1638,11 +1639,10 @@ adaythere.controller ("daysSearchCtrl", ["$scope", "$modal", "localityDaysServic
 	
 }]);
 
-var advertize = function () {
-	console.log ("Advertize!");
-};
-
 adaythere.controller ("loginCtrl", ["$scope", "$http", "$modal", function ($scope, $http, $modal) {
+
+
+
 
 	$scope.googlelogin = function () {
 		$http.get ("/login?method=google")
@@ -1668,7 +1668,37 @@ adaythere.controller ("loginCtrl", ["$scope", "$http", "$modal", function ($scop
 		});
 	};
 
+	$scope.open_loggedin_contact = function () {
+		var modalInstance = $modal.open ({
+			templateUrl: 'mailModalContent.html',
+		    	controller: adaythere.SendMailModalInstanceCtrl,
+		    	scope: $scope,
+		});
+	};
+
+	$scope.open_loggedout_contact = function () {
+		var modalInstance = $modal.open ({
+			templateUrl: 'mailModalContent.html',
+		    	controller: adaythere.SendMailModalInstanceCtrl,
+		    	scope: $scope,
+		});
+	};
+
+
+	execute_mail_function = $scope.open_loggedout_contact;
 }]);
+
+adaythere.SendMailModalInstanceCtrl = function ($scope, $modalInstance, $http) {
+
+	$scope.send = function () {
+		$modalInstance.close ();
+	};
+
+	$scope.cancel = function () {
+		$modalInstance.close ();
+	};
+
+};
 
 adaythere.HelpModalInstanceCtrl = function ($scope, $modalInstance) {
 
@@ -1684,7 +1714,6 @@ adaythere.controller ("adminCtrl", ["$scope", "$http", function ($scope, $http) 
 	$scope.received_days_data = [];
 	$scope.profile_search_on = {};
 	$scope.days_search_on = {};
-
 
 	$scope.adminprofile_search = function () {
 		var queried = false;
@@ -2943,15 +2972,7 @@ adaythere.MarkerModalInstanceCtrl = function ($scope, $modalInstance, marker_con
 		google.maps.event.addListener (place.marker, "click", function () {
 	        	$scope.adt_marker_modal.open_marker_modal (place, false, true);
 	        });
-/*
-		var infowindow = new google.maps.InfoWindow ({
-			content: "<a onclick='advertize ()'>You could advertize here - click for more information</a>"
-		});
-
-		google.maps.event.addListener (place.marker, 'mouseover', function () {
-			infowindow.open (map, place.marker);
-		});
-*/
+		
 		$modalInstance.close (place);
 	};
 
