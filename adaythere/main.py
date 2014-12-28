@@ -26,6 +26,7 @@ import app.keywords
 import app.locality_days
 import app.user_comments
 import app.user
+import app.mailer
 from webapp2_extras import i18n
 import os
 from app.lib.google.maps import Maps
@@ -272,6 +273,7 @@ app = webapp2.WSGIApplication ([
     ('/keywords', app.keywords.KeywordHandler),
     ('/locality_days', app.locality_days.LocalityDaysHandler),
     ('/user_comments', app.user_comments.UserCommentsHandler),
-    ('/users', app.user.UsersHandler)
+    ('/users', app.user.UsersHandler),
+    ('/send', app.mailer.SendHandler)
 ], debug=True)
 

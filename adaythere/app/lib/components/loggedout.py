@@ -1,18 +1,10 @@
 
 from webapp2_extras import i18n
-from app.lib.components.loggedin import get_help_menu
+from app.lib.components.loggedin import get_help_menu, get_contact_menu
 
 class LoggedOutNavView:
 
     def __init__(self):
-
-        contact_menu = """
-                <li class="dropdown" ng-controller="loginCtrl">
-                    <a href ng-click="open_loggedout_contact()" class="dropdown-toggle">
-                        Contact Us
-                    </a>
-                </li>
-        """
 
         self.html = """
         <ul class="page-header-nav">
@@ -24,7 +16,7 @@ class LoggedOutNavView:
             {0}
             {1}
         </ul>
-        """.format (get_help_menu (), contact_menu)
+        """.format (get_help_menu (), get_contact_menu ())
 
 
     def get(self):

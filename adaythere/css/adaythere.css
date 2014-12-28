@@ -249,7 +249,7 @@ input.mail_form {
 	width:375px;
 	display:block;
 	border: 1px solid #979700;
-	height: 20px;
+	height: 25px;
 	-webkit-box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.3);
 	-moz-box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.3);
 	box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.3);
@@ -258,7 +258,7 @@ input.mail_form {
 
 textarea.mail_form {
 	width:375px;
-	height:120px;
+	height:150px;
 	display:block;
 	border: 1px solid #979700;
 	-webkit-box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.3);
