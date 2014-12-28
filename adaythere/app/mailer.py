@@ -16,7 +16,7 @@ class SendHandler (webapp2.RequestHandler):
 
         body = data.get ("body", '')
         name = data.get ("name")
-        subject = self.request.get ("subject", '')
+        subject = data.get ("subject", '')
 
         if sender is None or not mail.is_email_valid (sender):
             self.response.status = 401 
