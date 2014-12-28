@@ -12,6 +12,15 @@ def get_help_menu ():
             </li>
     """
 
+def get_contact_menu ():
+        return """
+            <li class="dropdown" ng-controller="loginCtrl">
+                <a href ng-click="open_contact()" class="dropdown-toggle">
+                    Contact Us
+                </a>
+            </li>
+        """
+
 class LoggedInNavView:
 
     def __init__(self, db_user):
@@ -32,14 +41,6 @@ class LoggedInNavView:
                 </li>
             """
         
-        contact_menu = """
-            <li class="dropdown" ng-controller="loginCtrl">
-                <a href ng-click="open_loggedin_contact()" class="dropdown-toggle">
-                    Contact Us
-                </a>
-            </li>
-        """
-
         self.html = """
             <li class="dropdown" ng-controller="loginCtrl">
                 <a href ng-click="googlelogout()" class="dropdown-toggle">
@@ -65,7 +66,7 @@ class LoggedInNavView:
                 {1}
                 {2}
             <a href popover-placement="bottom" popover-trigger="mouseenter" popover="Click links to see drop down menus">?</a>
-        """.format(get_help_menu (), contact_menu, admin_menu)
+        """.format(get_help_menu (), get_contact_menu (), admin_menu)
 
     
     @classmethod

@@ -292,7 +292,7 @@ class MailModal (Modal):
 		    </label><br/>
 
 		    <label>
-                        <span>Message: </span><textarea class="mail_form" id="mail_form_feedback" name="feedback"></textarea>
+                        <span>Message: </span><textarea class="mail_form" id="mail_form_message" name="message"></textarea>
 		    </label>
         </form>
         """.format (addr_field));

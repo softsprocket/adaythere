@@ -345,7 +345,7 @@ ADT_CreatedDay.prototype.show_markers = function (scope, map) {
 		});
 
 		var infowindow = new google.maps.InfoWindow ({
-			content: "<a href='javascript:execute_mail_function ()'>You could advertize here - click for more information</a>"
+			content: "<a href='javascript:execute_mail_function ()'>You could advertise here - click for more information</a>"
 		});
 
 		google.maps.event.addListener (place.marker, 'mouseover', function () {
@@ -1462,7 +1462,6 @@ adaythere.controller ("daysSearchCtrl", ["$scope", "$modal", "localityDaysServic
 		$scope.daysearch.full_locality = searchService.full_locality;
 
 		if ($scope.daysearch.full_locality == "") {
-			var timer;
 			$("#locality_autocomplete_input").click (function () {
 				$("#locality_autocomplete_input").css ("border", "").val ("");
 			});
@@ -1668,30 +1667,75 @@ adaythere.controller ("loginCtrl", ["$scope", "$http", "$modal", function ($scop
 		});
 	};
 
-	$scope.open_loggedin_contact = function () {
+	$scope.open_contact = function () {
 		var modalInstance = $modal.open ({
 			templateUrl: 'mailModalContent.html',
 		    	controller: adaythere.SendMailModalInstanceCtrl,
 		    	scope: $scope,
 		});
-	};
 
-	$scope.open_loggedout_contact = function () {
-		var modalInstance = $modal.open ({
-			templateUrl: 'mailModalContent.html',
-		    	controller: adaythere.SendMailModalInstanceCtrl,
-		    	scope: $scope,
+		modalInstance.result.then (function (data) {
+			$http.post ("/send", JSON.stringify (data))
+				.success (function (data, status) {
+					console.log ("message sent: " + status);	
+				})
+	       			.error (function (data, status) {
+					console.error ("message send failed: " + data);
+				});	
 		});
 	};
 
 
-	execute_mail_function = $scope.open_loggedout_contact;
+	execute_mail_function = $scope.open_contact;
 }]);
 
 adaythere.SendMailModalInstanceCtrl = function ($scope, $modalInstance, $http) {
 
+
 	$scope.send = function () {
-		$modalInstance.close ();
+		var data = {};
+		var ok = true;
+
+		if ($("#mail_form_email").length != 0) {
+			data.sender = $("#mail_form_email").val ();
+			if (data.sender == "") {
+				ok = false;
+
+				$("#mail_form_email").click (function () {
+					$("#mail_form_email").css ("border", "").val ("");
+				});
+
+				$("#mail_form_email").css ("border", "1px solid red").val ("required field")
+			}
+		}
+
+		data.subject = $("#mail_form_subject").val ();
+		if (data.subject == "") {
+			ok = false;
+
+			$("#mail_form_subject").click (function () {
+				$("#mail_form_subject").css ("border", "").val ("");
+			});
+
+			$("#mail_form_subject").css ("border", "1px solid red").val ("required field")
+		}
+
+		data.body = $("#mail_form_message").val ();
+		if (data.body == "") {
+			ok = false;
+
+			$("#mail_form_message").click (function () {
+				$("#mail_form_message").css ("border", "").val ("");
+			});
+
+			$("#mail_form_message").css ("border", "1px solid red").val ("required field")
+		}
+		
+		data.name = $("#mail_form_name").val ();
+		
+		if (ok) {
+			$modalInstance.close (data);
+		}
 	};
 
 	$scope.cancel = function () {
