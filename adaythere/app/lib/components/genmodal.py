@@ -295,7 +295,46 @@ class MailModal (Modal):
                         <span>Message: </span><textarea class="mail_form" id="mail_form_message" name="message"></textarea>
 		    </label>
         </form>
-        """.format (addr_field));
+        """.format (addr_field))
+
+        self.add_body_content (modalBody)
+
+        modalFooter = Elements ()
+               
+        modalFooter.append_to_element ("""
+            <button class="btn btn-primary" ng-click="send ()">Send</button>
+            <button class="btn btn-warning" ng-click="cancel ()">Cancel</button>
+        """)
+
+        self.add_footer_content (modalFooter)
+
+
+class ReportModal (Modal):
+
+    def __init__ (self):
+
+        super (ReportModal,self).__init__("reportModalContent.html")
+        modalHeader = Elements ()
+        modalHeader.append_to_element ("""
+            <h3>Report</h3>
+        """)
+        self.add_header_content (modalHeader)
+
+        modalBody = Elements ()
+        modalBody.append_to_element ("""
+            <form class="mail_form">
+		    <label>
+                        <span>Name: </span><input class="mail_form" id="report_form_name" type="text" name="name" />
+		    </label><br/>
+		    <label>
+                        <span>Subject: </span><input ng-model="report_subject" class="mail_form" id="report_form_subject" type="text" name="subject" readonly />
+		    </label><br/>
+
+		    <label>
+                        <span>Reason: </span><textarea class="mail_form" id="report_form_message" name="message"></textarea>
+		    </label>
+        </form>
+        """)
 
         self.add_body_content (modalBody)
 

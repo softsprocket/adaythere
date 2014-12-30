@@ -34,7 +34,8 @@ import logging
 import json
 import inspect
 from app.lib.db.user import User
-from app.lib.components.genmodal import Modal, ProfileModal, MarkerModal, AdminProfileModal, AddPhotosModal, BecomeAContributorModal, HelpModal, MailModal
+from app.lib.components.genmodal import Modal, ProfileModal, MarkerModal, AdminProfileModal,\
+    AddPhotosModal, BecomeAContributorModal, HelpModal, MailModal, ReportModal
 from app.lib.components.element import Elements
 from app.lib.components.day_views import DayDisplay, DayPhotoDisplay, DayInfoDisplay
 from app.lib.db.days import Day, DayPhoto
@@ -210,6 +211,7 @@ class MapTools ():
         addPhotosModal = AddPhotosModal ()
         helpModal = HelpModal ()
         mailModal = MailModal (logged_in)
+        reportModal = ReportModal ()
 
         element.open_element ("section", {"id":"sidebar_section", "ng-controller":"sidebarCtrl"})\
             .open_element ("header", {"id":"sidebar_heading"})\
@@ -254,6 +256,9 @@ class MapTools ():
             .close_element ("div")\
             .open_element ("div")\
             .append_to_element (mailModal.get ())\
+            .close_element ("div")\
+            .open_element ("div")\
+            .append_to_element (reportModal.get ())\
             .close_element ("div")\
             .close_element ("section")
         return element

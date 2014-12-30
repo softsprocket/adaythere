@@ -53,6 +53,7 @@ class DayViewRater (Elements):
 
         self.append_to_element ("""
             <button type="button" ng-show="user_comments[$index] ? !user_comments[$index].rated : true" ng-click="open_dayview_rater ($index)">Rate this day!</button>
+            <a href ng-click="execute_report_function ('day', day)" tooltip-placement="bottom" tooltip="Report" tooltip-trigger="mouseenter" style="float:right;">&#8709;</a>
             <div collapse="user_comments[$index] ? user_comments[$index].collapsed : true">
                 <div class="well well-lg">
                     <rating id="daysearch_return_rating" value="user_comments[$index].rating" max="10"></rating><br/>

@@ -83,7 +83,8 @@ class DaySearch (Elements):
                 <div ng-repeat="review in daysearch_returned.reviews[$index]" ng-style="{'background-color':'#D8D8D8'}">
                     <p>Posted by: {{ review.commenters_name }}</p>
                     <rating readonly="true" value="review.rating" max="10"></rating><br/>
-                    <p>{{ review.text }}</p><br/>
+                    <p>{{ review.text }}
+                    <a href ng-click="execute_report_function ('review', review)" tooltip-placement="bottom" tooltip="Report" tooltip-trigger="mouseenter" style="float:right;">&#8709;</a>
                 </div>
             </div>
             <button id="dayssearch_show_map_button{{$index}}" type="button" ng-click="show_map_of (day, $index)">View Map</button>
