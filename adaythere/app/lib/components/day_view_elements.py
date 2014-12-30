@@ -52,7 +52,7 @@ class DayViewRater (Elements):
         super (DayViewRater, self).__init__ ()
 
         self.append_to_element ("""
-            <button type="button" ng-click="open_dayview_rater ($index)">Rate this day!</button>
+            <button type="button" ng-show="user_comments[$index] ? !user_comments[$index].rated : true" ng-click="open_dayview_rater ($index)">Rate this day!</button>
             <div collapse="user_comments[$index] ? user_comments[$index].collapsed : true">
                 <div class="well well-lg">
                     <rating id="daysearch_return_rating" value="user_comments[$index].rating" max="10"></rating><br/>

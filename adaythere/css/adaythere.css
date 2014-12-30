@@ -363,3 +363,11 @@ ol.help_list {
 ol.help_list_inner {
 	list-style-type: lower-alpha;
 }
+
+.review_display {
+	width:50%; 
+	height:50%; 
+	overflow-y:auto;
+	border: 1px solid #09C;
+}
+
