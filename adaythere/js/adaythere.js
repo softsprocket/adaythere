@@ -1648,7 +1648,11 @@ adaythere.controller ("daysSearchCtrl", ["$scope", "$modal", "localityDaysServic
 	
 }]);
 
-adaythere.controller ("loginCtrl", ["$scope", "$http", "$modal", function ($scope, $http, $modal) {
+adaythere.run (function ($rootScope) {
+	$rootScope.execute_report_function;
+});
+
+adaythere.controller ("loginCtrl", ["$rootScope", "$scope", "$http", "$modal", function ($rootScope, $scope, $http, $modal) {
 
 	$scope.googlelogin = function () {
 		$http.get ("/login?method=google")
@@ -1689,11 +1693,41 @@ adaythere.controller ("loginCtrl", ["$scope", "$http", "$modal", function ($scop
 	       			.error (function (data, status) {
 					console.error ("message send failed: " + data);
 				});	
+		}, function () {
+			
 		});
 	};
 
 
 	execute_mail_function = $scope.open_contact;
+	
+	$scope.open_report = function (type, obj) {
+		console.log (type, obj);
+
+		var modalInstance = $modal.open ({
+			templateUrl: 'reportModalContent.html',
+		    	controller: adaythere.ReportModalInstanceCtrl,
+		    	scope: $scope,
+		    	resolve: {
+		    		type: function () { return type; },
+		    		obj: function () { return obj; }
+			}
+		});
+
+		modalInstance.result.then (function (data) {
+			$http.post ("/send", JSON.stringify (data))
+				.success (function (data, status) {
+					console.log ("message sent: " + status);	
+				})
+	       			.error (function (data, status) {
+					console.error ("message send failed: " + data);
+				});	
+		}, function () {
+			
+		});
+	};
+
+	$rootScope.execute_report_function = $scope.open_report;
 }]);
 
 adaythere.SendMailModalInstanceCtrl = function ($scope, $modalInstance, $http) {
@@ -1746,7 +1780,46 @@ adaythere.SendMailModalInstanceCtrl = function ($scope, $modalInstance, $http) {
 	};
 
 	$scope.cancel = function () {
-		$modalInstance.close ();
+		$modalInstance.dismiss ('cancel');
+	};
+
+};
+
+adaythere.ReportModalInstanceCtrl = function ($scope, $modalInstance, $http, type, obj) {
+
+	console.log ("In instance:", type, obj);
+
+	$scope.report_subject = "Reported: " + type + " Name: " + (obj.name ? obj.name : obj.commenters_name) + " Title: " + obj.title;
+
+	$scope.send = function () {
+		var data = {};
+		var ok = true;
+
+		data.subject = $("#report_form_subject").val ();
+
+		data.body = $("#report_form_message").val ();
+		if (data.body == "") {
+			ok = false;
+
+			$("#report_form_message").click (function () {
+				$("#report_form_message").css ("border", "").val ("");
+			});
+
+			$("#report_form_message").css ("border", "1px solid red").val ("required field")
+		}
+		
+		data.name = $("#report_form_name").val ();
+		
+		if (ok) {
+			data.body += "\n----------------------------------------\n";
+			data.body += (obj.description ? obj.description : obj.text);
+			console.log (data.body);
+			$modalInstance.close (data);
+		}
+	};
+
+	$scope.cancel = function () {
+		$modalInstance.dismiss ('cancel');
 	};
 
 };
@@ -3030,9 +3103,6 @@ adaythere.MarkerModalInstanceCtrl = function ($scope, $modalInstance, marker_con
 
 };
 
-adaythere.controller ("sendMailCtrl", ["$scope", "$http", function ($scope, $http) {
-
-}]);
 
 /*
  * jquery callbacks
