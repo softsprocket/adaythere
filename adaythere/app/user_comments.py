@@ -61,7 +61,7 @@ class UserCommentsHandler (webapp2.RequestHandler):
 
         day.put ()
 
-        self.response.write (json.dumps ({'numberOfReviews': day.numberOfReviews, 'averageReview': day.averageReview }));
+        self.response.write (json.dumps ({'numberOfReviews': day.numberOfReviews, 'averageReview': day.averageReview, 'review': new_comment.to_dict ()}));
 
         self.response.status = 200
 
@@ -70,6 +70,8 @@ class UserCommentsHandler (webapp2.RequestHandler):
 
 
     def get (self):
+
+        logged_in_user, commenters_id = ADayThere.tool_user ()
 
         userid = self.request.get ('userid', None)
         title = self.request.get ('title', None)
@@ -80,6 +82,14 @@ class UserCommentsHandler (webapp2.RequestHandler):
             self.response.status = 401
             return
 
+
+        json_comments = []
+
+        if commenters_id is not None:
+            prev_comment = UserComment.query_previous_comment (commenters_id.name, userid, title).get ()
+            if prev_comment is not None:
+                json_comments.append (json.dumps (prev_comment.to_dict ()))
+        
         comments_query = UserComment.query_comments (userid, title) 
 
         if cursor is not None:
@@ -87,9 +97,9 @@ class UserCommentsHandler (webapp2.RequestHandler):
         else:
             comments, cursor, more = comments_query.fetch_page (limit)
 
-        json_comments = []
         for each in comments:
-            json_comments.append (json.dumps (each.to_dict ()))
+            if prev_comment is None or each.commenters_name != prev_comment.commenters_name:
+                json_comments.append (json.dumps (each.to_dict ()))
 
         return_vals= {
             'comments': json_comments,
@@ -101,6 +111,8 @@ class UserCommentsHandler (webapp2.RequestHandler):
             return_vals['cursor'] = cursor.urlsafe()
 
         self.response.write (json.dumps (return_vals))
-        self.response.status = 200
-
+        if prev_comment is not None:
+            self.response.status = 201
+        else:
+            self.response.status = 200
 

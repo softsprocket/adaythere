@@ -76,13 +76,13 @@ class DaySearch (Elements):
 
         elements.append_to_element ("""
             <p>Posted by: {{ day.name }} </p>
-            Number of reviews: {{day.numberOfReviews}} - Average review: <rating value="day.averageReview" max="10"></rating>
+            Number of reviews: {{day.numberOfReviews}} - Average review: <rating readonly="true" value="day.averageReview" max="10"></rating>
             <a ng-click="show_reviews_for ($index)" style="float: right;">Reviews</a>
             <br>
-            <div id="daysearch_review_display_window{{$index}}" style="display:none; z-index:20; width:50%; height:50%; overflow-y:auto;" >
-                <div ng-repeat="review in daysearch_returned.reviews[$index]">
+            <div id="daysearch_review_display_window{{$index}}" ng-show="show_review_display[$index]" class="review_display" >
+                <div ng-repeat="review in daysearch_returned.reviews[$index]" ng-style="{'background-color':'#D8D8D8'}">
                     <p>Posted by: {{ review.commenters_name }}</p>
-                    <rating value="review.rating" max="10"></rating><br/>
+                    <rating readonly="true" value="review.rating" max="10"></rating><br/>
                     <p>{{ review.text }}</p><br/>
                 </div>
             </div>

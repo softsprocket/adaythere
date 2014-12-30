@@ -1301,7 +1301,7 @@ ADT_UserRatingService.prototype.send_rating = function (userid, title, rating, t
 	return deferred.promise;
 }
 
-ADT_UserRatingService.prototype.get_ratings = function (userid, title, limit, cursor) {
+ADT_UserRatingService.prototype.get_ratings = function (userid, title, index, limit, cursor) {
 	var qstr = '/user_comments?';
         var deferred = this.q.defer ();
 	
@@ -1328,6 +1328,7 @@ ADT_UserRatingService.prototype.get_ratings = function (userid, title, limit, cu
 
 	this.http.get (qstr).success (function (data, status, headers, config) {
 		var o = {
+			index: index,
 			more: data.more,
 			cursor: data.cursor,
 			comments: [],
@@ -1425,6 +1426,16 @@ adaythere.controller ("daysSearchCtrl", ["$scope", "$modal", "localityDaysServic
 		$scope.open_welcome_doors ();
 	};
 
+	function UserComment () {
+		this.collapsed = true;
+		this.rated = false;
+		this.rating = 0;
+		this.text = "";
+		this.max = 10;
+	};
+
+	$scope.user_comments = [];
+	
 	$scope.getLocalityDays = function (params) {
 		init_return ();
 		localityDaysService.getDays (params).then (function (data) {
@@ -1438,11 +1449,16 @@ adaythere.controller ("daysSearchCtrl", ["$scope", "$modal", "localityDaysServic
 					day.is_editable = false;
 					$scope.daysearch_returned.days.push (day);
 
-					userRatingService.get_ratings (day.userid, day.title).then (function (o) {
-						if (o.status == 200) {
-							$scope.daysearch_returned.reviews.push (o.comments);
+					userRatingService.get_ratings (day.userid, day.title, i).then (function (o) {
+						if (o.status == 200 || o.status == 201) {
+							$scope.daysearch_returned.reviews[o.index] = o.comments;
+							if (o.status == 201) {
+								$scope.user_comments[o.index] = new UserComment ();
+								$scope.user_comments[o.index].rated = true;
+							}
 						} else {
-							$scope.daysearch_returned.reviews.push (null); 
+
+							$scope.daysearch_returned.reviews[o.index] = null; 
 						}
 					});
 				}
@@ -1497,19 +1513,10 @@ adaythere.controller ("daysSearchCtrl", ["$scope", "$modal", "localityDaysServic
 			
 		args.all_words =  ($scope.daysearch.all_words == "all");
 
-		console.log ("Search Args", args);
-
 		$scope.getLocalityDays (args);
 	};
 
-	$scope.user_comments = [];
 
-	function UserComment () {
-		this.collapsed = true;
-		this.rating = 0;
-		this.text = "";
-		this.max = 10;
-	};
 
 	$scope.open_dayview_rater = function (index) {
 
@@ -1527,6 +1534,9 @@ adaythere.controller ("daysSearchCtrl", ["$scope", "$modal", "localityDaysServic
 		.then (function (o) {
 			$scope.daysearch_returned.days[index].numberOfReviews = o.data.numberOfReviews;
 			$scope.daysearch_returned.days[index].averageReview = o.data.averageReview;
+			$scope.user_comments[index].rated = true;
+			console.log (index, $scope.daysearch_returned);
+			$scope.daysearch_returned.reviews[index].push (o.data.review);
 		}, function (o) {
 			if (o.status == 401) {
 				console.error ("Permission denied");					
@@ -1605,9 +1615,9 @@ adaythere.controller ("daysSearchCtrl", ["$scope", "$modal", "localityDaysServic
 		}
 	};
 
+	$scope.show_review_display = [];
 	$scope.show_reviews_for = function (index) {
-		$("#daysearch_review_display_window"+index).toggle ();
-		console.log ("Showing", index);
+		$scope.show_review_display[index] = !$scope.show_review_display[index];
 	};
 
 	$scope.open_google_plus_window = function (userid, title) {
@@ -1639,9 +1649,6 @@ adaythere.controller ("daysSearchCtrl", ["$scope", "$modal", "localityDaysServic
 }]);
 
 adaythere.controller ("loginCtrl", ["$scope", "$http", "$modal", function ($scope, $http, $modal) {
-
-
-
 
 	$scope.googlelogin = function () {
 		$http.get ("/login?method=google")
