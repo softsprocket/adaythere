@@ -43,8 +43,8 @@ class DaySearch (Elements):
 
         self.append_to_element ("""
             <p>
-            <button ng-click="executeSearch()">Search</button>
-            <button ng-click="getRandomDays()" style="float:right;">Random Days</button>
+            <button ng-click="executeSearch()" popover-placement="bottom" popover-trigger="mouseenter" popover="Search for days using the form fields. Only Locality is required.">Search</button>
+            <button ng-click="getRandomDays()" style="float:right;" popover-placement="bottom" popover-trigger="mouseenter" popover="Random Search for days. No fields will be used.">Random Days</button>
         """)
 
         self.close_element ("fieldset")

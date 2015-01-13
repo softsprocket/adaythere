@@ -1,5 +1,5 @@
 var ADT_Constants = {
-	MINIMUM_WINDOW_WIDTH:  900,
+	MINIMUM_WINDOW_WIDTH: 900,
 	DEFAULT_MAP_ZOOM: 12
 };
 
@@ -1385,7 +1385,7 @@ adaythere.controller ("daysSearchCtrl", ["$scope", "$modal", "localityDaysServic
 	}
 
 	var hello_world = function () {
-		if ($("#user_not_logged_in").length == 0) {
+		if ($(window).width () < ADT_Constants.MINIMUM_WINDOW_WIDTH || $("#user_not_logged_in").length == 0) {
 			return;
 		}
 	
@@ -3122,25 +3122,28 @@ var size_daysearch = function (w, h, small) {
 	var width = $(".fieldset_daysearch").width ();
 
 	var max = 0;
-	$(".daysearch_label").each(function(){
+	$(".daysearch_label").each(function() {
         	if ($(this).width() > max)
             	max = $(this).width();    
     	});
+
     	$(".daysearch_label").width(max);
 
-	var input_width = $(".daysearch_input").width () - max;
+	//var input_width = $(".daysearch_input").width ();
 
-       	$(".daysearch_input").width (input_width);	
+       	//$(".daysearch_input").width (input_width);	
 
 	var overlay_height = $(".fieldset_daysearch").height ();
-	var overlay_top = (h / 2) - overlay_height;
+	var overlay_top = Math.abs ((h / 2) - overlay_height);
+	
 	$("#daysearch_overlay").css ("top", overlay_top);	
+
 
 
 };
 
 var size_daysearch_return = function (w, h, small) {
-	if (small || ((w * 3)/5.0 < 900)) {
+	if (small || ((w * 3)/5.0 < ADT_Constants.MINIMUM_WINDOW_WIDTH)) {
 		$("#daysearch_return_display").css ("width", "100%");
 	} else {
 		$("#daysearch_return_display").css ("width", "60%");
@@ -3156,11 +3159,14 @@ $(window).resize (function () {
 	var width = $(window).width ();
 	var height = $(window).height ();
 
-	size_daysearch (width, height, width < 900);
-	size_daysearch_return (width, height, width < 900);
+	size_daysearch (width, height, width < ADT_Constants.MINIMUM_WINDOW_WIDTH);
+	size_daysearch_return (width, height, width < ADT_Constants.MINIMUM_WINDOW_WIDTH);
 
-	if (width < 900) {
+	if (width < ADT_Constants.MINIMUM_WINDOW_WIDTH) {
 		ADT_SidebarDisplayControlInstance.show_sidebar (false);
+		$("#hello_login_popup").hide ();
+		$("#hello_search_popup").hide ();
+		$("#hello_help_popup").hide ();
 	} else {
 		ADT_SidebarDisplayControlInstance.show_sidebar (true);
 	}
@@ -3175,10 +3181,10 @@ $(function () {
 	var width = $(window).width ();
 	var height = $(window).height ();
 
-	size_daysearch (width, height, width < 900);
-	size_daysearch_return (width, height, width < 900);
+	size_daysearch (width, height, width < ADT_Constants.MINIMUM_WINDOW_WIDTH);
+	size_daysearch_return (width, height, width < ADT_Constants.MINIMUM_WINDOW_WIDTH);
 
-	if (width < 900) {
+	if (width < ADT_Constants.MINIMUM_WINDOW_WIDTH) {
 		ADT_SidebarDisplayControlInstance.show_sidebar (false);
 	}	
 

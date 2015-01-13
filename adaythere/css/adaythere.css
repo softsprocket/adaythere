@@ -371,3 +371,6 @@ ol.help_list_inner {
 	border: 1px solid #09C;
 }
 
+.help_topic {
+	margin-left: 30px;
+};
