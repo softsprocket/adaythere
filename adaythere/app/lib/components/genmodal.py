@@ -228,25 +228,75 @@ class HelpModal (Modal):
         modalBody = Elements ()
         modalBody.append_to_element ("""
             <ol class="help_list">
-                <li class="help"><a href="#searching">Searching</a></li>
+                <li class="help"><a href="#login">Log In</a>
+                    <ol class="help_list_inner">
+                        <li class="help"><a href="#login_how">How</a></li>
+                        <li class="help"><a href="#login_why">Why</a></li>
+                        <li class="help"><a href="#logout">Log Out</a></li>
+                    </ol>
+                </li>
+                <li class="help"><a href="#searching">Searching</a>
                     <ol class="help_list_inner">
                         <li class="help"><a href="#search_locality">Locality Field</a></li>
                         <li class="help"><a href="#search_terms">Search Terms</a></li>
+                        <li class="help"><a href="#min_rating">Minimum Rating</a></li>
                     </ol>
+                </li>
+            
+                <li class="help"><a href="#reporting">Reporting</a>
+
+                </li>
             </ol>
+
+            <h2><a id="login">Log In</a></h3>
+            <div class="help_topic">
+                <p>A Day There uses the google login service.
+                <h3><a id="login_how">How</a></h4>
+                <p>If you aren't logged in there will be a link in the menu bar that says "Login". Click on it and you will be taken
+                    to the Goolge log in page. After you log in you will be returned to A Day There and the link will now say "Logout". 
+                </p>
+
+                <h3><a id="login_why">Why</a></h4>
+                <p>
+                    Much of the functionality of A Day There is only available after you log in. A logged in user can comment and rate 
+                    other's days and create days of their own. Having a log in process makes users responsible for the content they
+                    create. 
+                </p>
+                
+                <h3><a id="logout">Log Out</a></h4>
+                <p>
+                    Simply click the "Logout" link in the menu bar and you will be logged out.
+                </p>
+            </div>
             <h2><a id="searching">Searching</a></h3>
+            <div class="help_topic">
             <p>The "Day Search" form is available whether you log in or not. The simplest search is to click the "Random Days"
                 button. This will display a list of random results. Click on a title to see the day. You can return to the search
                 by clicking the "Search Again" button or using the menu item, accessed by clicking your user name in the menu bar.
             </p>
-            <h3><a id="search_locality">Locality</a></h4>
+            <h3><a id="search_locality">Locality Field</a></h4>
             <p>Enter the region you wish to search in the "Locality" field. It has autocomplete ability and will attempt to help 
-                you find the region you're looking for. Locality is a requirement unless you are using the "Random Days" (which ignores all fields).
+                you find the region or place you're looking for. Locality is a requirement unless you are using the "Random Days" (which ignores all fields).
+                An example of Locality might be "Victoria, BC". 
             </p>
             <h3><a id="search_terms">Search Terms</a></h4>
             <p>The "Search Terms" field allows you to narrow your search based on words potentially found in the description or title
-                of a day. 
+                of a day. The "All Words", or "Any Words" selector allows you to change how this search works.
             </p>
+            <h3><a id="min_rating">Minimum Rating</a></h4>
+            <p>The "Minimum Rating" widget allows you to select only from days of a certain rating. The "Clear" button clears this value.
+                New days may have no rating and your sense of how something is rated may vary from the raters so it may be worthwile to return 
+                unrated results as well as rated results.
+            </p>
+            </div>
+
+            <h2><a id="reporting">Reporting</a></h3>
+            <div class="help_topic">
+                <p>On each day and on each review of a day there is a character &#8709; that can be used to report inappropriate language or cyber behavior,
+                    photos that are unsuitable etc. A form will open that will allow you to give the reason for your report. Remember that people are 
+                    entitled to their opinions, however we expect them to be given in a reasonable manner, in non-offensive language and to be accompanied 
+                    by photos suitable for viewing by all.
+            </div>
         """)
 
         self.add_body_content (modalBody)

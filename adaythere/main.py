@@ -134,7 +134,7 @@ class ToolsHandler (webapp2.RequestHandler):
         self.adaythere.open_element ("section", { "id":"welcome_to_left" })
         self.adaythere.append_to_element ("""
                     <img src="img/logo.png" width="60%"></img>
-                    <p><h1 style="font-style:italic;text-align:center;font-size:large;">Celebrating the joys of place.</h3></p>
+                    <p><h1 style="font-style:italic;text-align:center;font-size:large;" id="welcome_celebrate_text">Celebrating the joys of place.</h3></p>
                 """)
         self.adaythere.close_element ("section")
         
@@ -153,7 +153,7 @@ class ToolsHandler (webapp2.RequestHandler):
 
         self.adaythere.append_to_element ("""
                     <img src="img/logo.png" width="30%"></img>
-                    <p><h1 style="font-style:italic;text-align:center;font-size:large;">Celebrating the joys of place.</h3></p>
+                    <p><h1 style="font-style:italic;text-align:center;font-size:large;" id="find_celebrate_text">Celebrating the joys of place.</h3></p>
                 """)
 
         self.adaythere.append_to_element (day_search.get_days_display ())
